@@ -169,6 +169,7 @@ function submitRegistration() {
     const age = document.getElementById('user-age').value.trim();
     const city = document.getElementById('user-city').value.trim();
     const username = document.getElementById('user-username').value.trim();
+    if (!document.getElementById('agree-checkbox').checked) { alert('Подтверди, что тебе есть 16 лет и ты принимаешь правила!'); return; }
     if (!name || !age || !city || !userData.gender) { alert('Заполни все поля и выбери пол!'); return; }
     if (parseInt(age) < 16) { alert('Игра доступна с 16 лет!'); return; }
     userData.name = name; userData.age = age; userData.city = city; userData.username = username;
