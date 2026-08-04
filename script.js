@@ -1,5 +1,5 @@
 const SUPABASE_URL = 'https://oreexiwvjhwssznwxndn.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9yZWV4aXd2amh3c3N6bnd4bmRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU4MzAzNTUsImV4cCI6MjEwMTQwNjM1NX0.Jq33H7nyHOTx00_xBYEOsS5u02C6_i_iDnQyGcbaTZM';
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9yZWV4aXd2amh3c3N6bnd4bmRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU4MzAzNTUsImV4cCI6MjEwMTQwNjM1NX0.Jq33H7nyHOTx00_xBYEOsS5u02C6_i_iDnQyGcbaTZM"
 
 let sb = null;
 try {
@@ -19,7 +19,7 @@ try { tg.ready(); tg.expand(); } catch (e) {}
 
 let userData = {
     name: '', age: '', city: '', gender: '', photo: '', username: '', question: '', blind: false,
-    score: 0, wins: 0, games_played: 0,
+    score: 0, wins: 0, games_played: 0, superlikes: 0, premium: false,
     telegramId: (tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.id : 'unknown'
 };
 
@@ -87,7 +87,7 @@ async function openPlayers() {
     if (!others.length) { list.innerHTML = '<div class="loading">Сейчас никого нет онлайн 😢<br>Позови друзей!</div>'; return; }
     list.innerHTML = others.map(p =>
         '<div class="player-card"><div class="player-photo" style="background-image:url(' + (p.photo || '') + ')">' + (p.photo ? '' : '💕') + '</div>' +
-        '<div class="player-info"><div class="player-name">' + escapeHtml(p.name) + '</div>' +
+        '<div class="player-info"><div class="player-name">' + escapeHtml(p.name) + (p.premium ? ' 💎' : '') + '</div>' +
         '<div class="player-meta">' + p.age + ' лет · ' + escapeHtml(p.city) + '</div></div></div>'
     ).join('');
 }
@@ -189,19 +189,21 @@ function showProfile() {
 function renderProfileInfo() {
     const genderText = userData.gender === 'male' ? '👨 Парень' : '👩 Девушка';
     document.getElementById('profile-info').innerHTML =
-        '<div class="profile-name">' + escapeHtml(userData.name) + '</div>' +
+        '<div class="profile-name">' + escapeHtml(userData.name) + (userData.premium ? ' 💎' : '') + '</div>' +
         '<div class="profile-line">' + userData.age + ' лет · ' + escapeHtml(userData.city) + '</div>' +
         '<div class="profile-line">' + genderText + '</div>' +
-        '<div class="profile-line">💎 ' + (userData.score || 0) + ' · ❤️ ' + (userData.wins || 0) + ' · 🎮 ' + (userData.games_played || 0) + '</div>';
+        '<div class="profile-line">💎 ' + (userData.score || 0) + ' · ❤️ ' + (userData.wins || 0) + ' · 🎮 ' + (userData.games_played || 0) + ' · ⭐ ' + (userData.superlikes || 0) + '</div>';
 }
 
 async function refreshMyStats() {
     if (!sb) return;
-    const { data } = await sb.from('profiles').select('score, wins, games_played').eq('id', Number(userData.telegramId)).single();
+    const { data } = await sb.from('profiles').select('score, wins, games_played, superlikes, premium').eq('id', Number(userData.telegramId)).single();
     if (data) {
         userData.score = data.score || 0;
         userData.wins = data.wins || 0;
         userData.games_played = data.games_played || 0;
+        userData.superlikes = data.superlikes || 0;
+        userData.premium = !!data.premium;
         renderProfileInfo();
     }
 }
