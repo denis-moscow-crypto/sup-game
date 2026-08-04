@@ -2,7 +2,7 @@
 //  ВАЖНО: ВСТАВЬ СВОИ КЛЮЧИ SUPABASE!
 // =====================================================
 const SUPABASE_URL = 'https://oreexiwvjhwssznwxndn.supabase.co';
-const SUPABASE_KEY = 'h4fqK0XozeXtNU6JBaBC7w_Psj6ACXV';
+const SUPABASE_KEY = 'sb_publishable_PMaFGTxugOMCVAZAfbRV_A_2I0i9tK';
 // =====================================================
 
 const tg = window.Telegram.WebApp;
