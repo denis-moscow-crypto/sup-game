@@ -10,20 +10,18 @@
 </head>
 <body>
     <div class="app">
-        <!-- Экран приветствия -->
+        <!-- Приветствие -->
         <div id="welcome-screen" class="screen active">
-            <div class="hearts-bg">
-                <span>💕</span><span>💘</span><span>💖</span><span>💗</span><span>💓</span>
-            </div>
+            <div class="hearts-bg"><span>💕</span><span>💘</span><span>💖</span><span>💗</span><span>💓</span></div>
             <div class="welcome-content">
                 <h1 class="logo">СУП</h1>
                 <p class="tagline">Спросил · Увидел · Полюбил</p>
-                <p class="subtitle">Новая версия легендарной игры теперь в Telegram!</p>
+                <p class="subtitle">Легендарная игра вернулась в Telegram!</p>
                 <button class="btn-primary" onclick="startApp()">Начать 💕</button>
             </div>
         </div>
 
-        <!-- Экран регистрации -->
+        <!-- Регистрация -->
         <div id="registration-screen" class="screen">
             <div class="form-container">
                 <h2>Давай познакомимся!</h2>
@@ -35,6 +33,7 @@
                 <input type="text" id="user-name" class="input" placeholder="Как тебя зовут?">
                 <input type="number" id="user-age" class="input" placeholder="Возраст" min="16" max="99">
                 <input type="text" id="user-city" class="input" placeholder="Город">
+                <input type="text" id="user-username" class="input" placeholder="@username (для совпадений)">
                 <div class="gender-select">
                     <button class="gender-btn" data-gender="male" onclick="selectGender('male')">👨 Парень</button>
                     <button class="gender-btn" data-gender="female" onclick="selectGender('female')">👩 Девушка</button>
@@ -43,7 +42,7 @@
             </div>
         </div>
 
-        <!-- Экран профиля -->
+        <!-- Профиль -->
         <div id="profile-screen" class="screen">
             <div class="form-container">
                 <h2>Твой профиль 💖</h2>
@@ -51,17 +50,77 @@
                     <div class="avatar-circle big" id="profile-photo">📷</div>
                     <div id="profile-info" class="profile-info"></div>
                 </div>
+                <button class="btn-primary" onclick="openQuestion()">Играть 💘</button>
+                <button class="btn-secondary" onclick="openPlayers()">Игроки в игре 👥</button>
                 <button class="btn-secondary" onclick="editProfile()">Изменить ✏️</button>
-                <button class="btn-primary" onclick="openPlayers()">Смотреть игроков 💕</button>
             </div>
         </div>
 
-        <!-- Экран списка игроков -->
+        <!-- Игроки -->
         <div id="players-screen" class="screen">
             <div class="form-container">
                 <h2>Игроки в игре 💕</h2>
                 <div id="players-list" class="players-list"></div>
                 <button class="btn-secondary" onclick="showProfile()">← Назад</button>
+            </div>
+        </div>
+
+        <!-- Вопрос -->
+        <div id="question-screen" class="screen">
+            <div class="form-container">
+                <h2>Твой вопрос 💬</h2>
+                <p class="hint-text">Придумай вопрос, на который ответит твой будущий соперник:</p>
+                <textarea id="question-input" class="input textarea" placeholder="Например: Как ты проводишь выходные?"></textarea>
+                <button class="btn-primary" onclick="saveQuestionAndSearch()">Сохранить и искать пару 🔍</button>
+                <button class="btn-secondary" onclick="showProfile()">← Назад</button>
+            </div>
+        </div>
+
+        <!-- Поиск -->
+        <div id="search-screen" class="screen">
+            <div class="form-container">
+                <div class="search-heart">💘</div>
+                <h2>Ищем тебе пару...</h2>
+                <p id="search-status" class="hint-text">Сканируем сердца поблизости 🔭</p>
+                <button class="btn-secondary" onclick="cancelSearch()">Отменить ✋</button>
+            </div>
+        </div>
+
+        <!-- Раунд: ответ -->
+        <div id="round-answer-screen" class="screen">
+            <div class="form-container">
+                <h2>Пара найдена! 🎉</h2>
+                <p class="hint-text">Тебе задали вопрос:</p>
+                <div id="round-question-text" class="question-bubble">...</div>
+                <textarea id="round-answer-input" class="input textarea" placeholder="Твой ответ..."></textarea>
+                <button class="btn-primary" onclick="submitAnswer()">Отправить ответ ✉️</button>
+            </div>
+        </div>
+
+        <!-- Раунд: выбор -->
+        <div id="round-choose-screen" class="screen">
+            <div class="form-container">
+                <h2>Твой выбор 💭</h2>
+                <div class="profile-card">
+                    <div class="avatar-circle big" id="choose-photo">💕</div>
+                    <div id="choose-info" class="profile-info"></div>
+                </div>
+                <p class="hint-text">Ответ на твой вопрос:</p>
+                <div id="choose-answer" class="question-bubble">...</div>
+                <div class="choice-buttons">
+                    <button class="btn-no" onclick="submitChoice(false)">👎</button>
+                    <button class="btn-yes" onclick="submitChoice(true)">❤️</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Результат -->
+        <div id="result-screen" class="screen">
+            <div class="form-container">
+                <div id="result-emoji" class="search-heart">💖</div>
+                <h2 id="result-title">Результат</h2>
+                <div id="result-body"></div>
+                <button class="btn-primary" onclick="playAgain()">Играть ещё 🔄</button>
             </div>
         </div>
     </div>
