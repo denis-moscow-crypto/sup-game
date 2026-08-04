@@ -185,3 +185,182 @@ function editProfile() {
     if (userData.gender) selectGender(userData.gender);
     showScreen('registration-screen');
 }
+
+function openQuestion() {
+    document.getElementById('question-input').value = userData.question || '';
+    showScreen('question-screen');
+}
+
+async function saveQuestionAndSearch() {
+    const q = document.getElementById('question-input').value.trim();
+    if (!q) { alert('Придумай вопрос!'); return; }
+    userData.question = q;
+    saveProfile(userData);
+    await saveProfileToCloud(userData);
+    startSearch();
+}
+
+function stopPolling() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } }
+
+async function startSearch() {
+    if (!sb) { alert('⚠️ База не подключена! Проверь ключ SUPABASE_KEY.'); return; }
+    showScreen('search-screen');
+    startWaiting('search');
+    await sb.from('profiles').update({ status: 'searching' }).eq('id', Number(userData.telegramId));
+    stopPolling();
+    pollTimer = setInterval(searchTick, 3000);
+    searchTick();
+}
+
+async function searchTick() {
+    const myId = Number(userData.telegramId);
+    const { data: games } = await sb.from('games').select('*')
+        .or('player1.eq.' + myId + ',player2.eq.' + myId)
+        .neq('status', 'done').limit(1);
+    if (games && games.length) {
+        stopPolling();
+        currentGame = games[0];
+        renderRound();
+        return;
+    }
+    const { data: candidates } = await sb.from('profiles').select('*')
+        .eq('status', 'searching').neq('id', myId).neq('gender', userData.gender).limit(1);
+    if (candidates && candidates.length) {
+        const opp = candidates[0];
+        const { error } = await sb.from('games').insert({
+            player1: myId, player2: opp.id, q1: userData.question, q2: opp.question
+        });
+        if (!error) {
+            await sb.from('profiles').update({ status: 'in_game' }).in('id', [myId, opp.id]);
+            document.getElementById('search-status').textContent = 'Пара найдена! 🎉';
+        }
+    }
+}
+
+async function cancelSearch() {
+    stopPolling(); stopWaiting();
+    if (sb) await sb.from('profiles').update({ status: 'idle' }).eq('id', Number(userData.telegramId));
+    showProfile();
+}
+
+function myRole(g) { return String(g.player1) === String(userData.telegramId) ? 'p1' : 'p2'; }
+
+async function loadOpponent(g) {
+    const oppId = myRole(g) === 'p1' ? g.player2 : g.player1;
+    const { data } = await sb.from('profiles').select('*').eq('id', oppId).single();
+    return data;
+}
+
+async function renderRound() {
+    stopWaiting();
+    const g = currentGame;
+    const role = myRole(g);
+    const myAnswer = role === 'p1' ? g.a1 : g.a2;
+    const oppAnswer = role === 'p1' ? g.a2 : g.a1;
+    const myChoice = role === 'p1' ? g.c1 : g.c2;
+
+    if (g.status === 'done') { showResult(); return; }
+
+    if (g.status === 'answers' && !myAnswer) {
+        if (!document.getElementById('round-answer-screen').classList.contains('active')) {
+            const oppQ = role === 'p1' ? g.q2 : g.q1;
+            document.getElementById('round-question-text').textContent = oppQ || 'Расскажи о себе 😉';
+            showScreen('round-answer-screen');
+        }
+        return;
+    }
+    if (g.status === 'answers' && myAnswer) {
+        showScreen('search-screen');
+        startWaiting('answer');
+        startRoundPolling();
+        return;
+    }
+    if (g.status === 'choose' && myChoice === null) {
+        if (!document.getElementById('round-choose-screen').classList.contains('active')) {
+            currentOpponent = await loadOpponent(g);
+            const opp = currentOpponent || {};
+            setAvatar('choose-photo', opp.photo);
+            document.getElementById('choose-info').innerHTML =
+                '<div class="profile-name">' + escapeHtml(opp.name) + '</div>' +
+                '<div class="profile-line">' + (opp.age || '') + ' лет · ' + escapeHtml(opp.city || '') + '</div>';
+            document.getElementById('choose-answer').textContent = oppAnswer || '...';
+            showScreen('round-choose-screen');
+        }
+        return;
+    }
+    if (g.status === 'choose' && myChoice !== null) {
+        showScreen('search-screen');
+        startWaiting('choice');
+        startRoundPolling();
+        return;
+    }
+}
+
+function startRoundPolling() {
+    stopPolling();
+    pollTimer = setInterval(async () => {
+        const { data } = await sb.from('games').select('*').eq('id', currentGame.id).single();
+        if (data) { currentGame = data; renderRound(); }
+    }, 3000);
+}
+
+async function submitAnswer() {
+    const text = document.getElementById('round-answer-input').value.trim();
+    if (!text) { alert('Напиши ответ!'); return; }
+    const role = myRole(currentGame);
+    const field = role === 'p1' ? 'a1' : 'a2';
+    await sb.from('games').update({ [field]: text }).eq('id', currentGame.id);
+    const { data } = await sb.from('games').select('*').eq('id', currentGame.id).single();
+    currentGame = data;
+    if (data.a1 && data.a2 && data.status === 'answers') {
+        await sb.from('games').update({ status: 'choose' }).eq('id', data.id);
+        currentGame.status = 'choose';
+    }
+    renderRound();
+}
+
+async function submitChoice(like) {
+    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+    const role = myRole(currentGame);
+    const field = role === 'p1' ? 'c1' : 'c2';
+    await sb.from('games').update({ [field]: like }).eq('id', currentGame.id);
+    const { data } = await sb.from('games').select('*').eq('id', currentGame.id).single();
+    currentGame = data;
+    if (data.c1 !== null && data.c2 !== null && data.status !== 'done') {
+        await sb.from('games').update({ status: 'done' }).eq('id', data.id);
+        await sb.from('profiles').update({ status: 'idle' }).in('id', [data.player1, data.player2]);
+        currentGame.status = 'done';
+    }
+    renderRound();
+}
+
+async function showResult() {
+    stopPolling(); stopWaiting();
+    currentOpponent = currentOpponent || await loadOpponent(currentGame);
+    const opp = currentOpponent || {};
+    const match = currentGame.c1 && currentGame.c2;
+    if (match) {
+        document.getElementById('result-emoji').textContent = '💖';
+        document.getElementById('result-title').textContent = 'Это взаимно!';
+        let body = escapeHtml(opp.name) + ' тоже выбрал(а) тебя! 🎉';
+        if (opp.username) {
+            const u = opp.username.replace('@', '');
+            body += '<br><br>Напиши скорее: <a href="https://t.me/' + u + '" target="_blank">@' + u + '</a>';
+        } else {
+            body += '<br><br>Соперник не оставил @username 😢';
+        }
+        document.getElementById('result-body').innerHTML = body;
+    } else {
+        document.getElementById('result-emoji').textContent = '💔';
+        document.getElementById('result-title').textContent = 'Не в этот раз...';
+        document.getElementById('result-body').innerHTML = 'Симпатия не совпала. Но впереди ещё много сердец!';
+    }
+    showScreen('result-screen');
+}
+
+async function playAgain() {
+    if (sb) await sb.from('profiles').update({ status: 'idle' }).eq('id', Number(userData.telegramId));
+    currentGame = null;
+    currentOpponent = null;
+    openQuestion();
+}
