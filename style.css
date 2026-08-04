@@ -98,3 +98,17 @@ body {
 .profile-info { text-align: center; }
 .profile-name { font-size: 22px; font-weight: bold; color: #ff4778; margin-top: 10px; }
 .profile-line { font-size: 15px; color: #666; margin-top: 4px; }
+/* Список игроков */
+.players-list { max-height: 55vh; overflow-y: auto; margin-bottom: 15px; }
+.player-card {
+    display: flex; align-items: center; gap: 12px;
+    background: #fff0f5; border-radius: 15px; padding: 10px; margin-bottom: 10px;
+}
+.player-photo {
+    width: 60px; height: 60px; border-radius: 50%;
+    background-color: #ffd0e0; background-size: cover; background-position: center;
+    display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0;
+}
+.player-name { font-weight: bold; color: #ff4778; }
+.player-meta { font-size: 13px; color: #888; }
+.loading { text-align: center; color: #888; padding: 20px; }
