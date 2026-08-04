@@ -1,48 +1,24 @@
-// =====================================================
-//  ВАЖНО: ВСТАВЬ СВОИ КЛЮЧИ SUPABASE!
-// =====================================================
+// ===== ТВОИ КЛЮЧИ (СОХРАНИ ИЗ СТАРОГО ФАЙЛА!) =====
 const SUPABASE_URL = 'https://oreexiwvjhwssznwxndn.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9yZWV4aXd2amh3c3N6bnd4bmRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU4MzAzNTUsImV4cCI6MjEwMTQwNjM1NX0.Jq33H7nyHOTx00_xBYEOsS5u02C6_i_iDnQyGcbaTZM';
-// =====================================================
+// ==================================================
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const tg = window.Telegram.WebApp;
 tg.ready();
 tg.expand();
 
-let sb = null;
-let dbAvailable = false;
+let userData = {
+    name: '', age: '', city: '', gender: '', photo: '', username: '', question: '',
+    telegramId: (tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.id : 'unknown'
+};
 
-// Запасная загрузка SDK, если основная не сработала
-function loadScript(src) {
-    return new Promise((resolve, reject) => {
-        const s = document.createElement('script');
-        s.src = src;
-        s.onload = resolve;
-        s.onerror = reject;
-        document.head.appendChild(s);
-    });
-}
+let currentGame = null;
+let currentOpponent = null;
+let pollTimer = null;
 
-async function initDB() {
-    if (SUPABASE_URL.indexOf('XXXXX') !== -1 || SUPABASE_KEY.indexOf('ВСТАВЬ') !== -1) {
-        console.log('⚠️ Ключи Supabase не вставлены!');
-        return;
-    }
-    if (!window.supabase) {
-        try { await loadScript('https://unpkg.com/@supabase/supabase-js@2'); }
-        catch (e) { console.log('⚠️ SDK Supabase не загрузился'); return; }
-    }
-    if (window.supabase) {
-        try {
-            sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-            dbAvailable = true;
-            console.log('✅ Supabase подключён');
-        } catch (e) { console.log('⚠️ Ошибка клиента:', e); }
-    }
-}
-initDB();
-
-// ===== ХРАНЕНИЕ НА УСТРОЙСТВЕ =====
+// ===== ХРАНЕНИЕ =====
 function saveProfile(data) { localStorage.setItem('sup_profile', JSON.stringify(data)); }
 function loadProfile() {
     const saved = localStorage.getItem('sup_profile');
@@ -51,52 +27,29 @@ function loadProfile() {
 
 // ===== ОБЛАКО =====
 async function saveProfileToCloud(data) {
-    if (!dbAvailable || !sb) { console.log('БД недоступна — профиль сохранён только на устройстве'); return; }
+    if (!sb) return;
     const idNum = Number(data.telegramId);
-    if (!idNum) { console.log('Нет Telegram ID — в облако не сохраняем'); return; }
+    if (!idNum) return;
     const { error } = await sb.from('profiles').upsert({
-        id: idNum,
-        name: data.name,
-        age: parseInt(data.age),
-        city: data.city,
-        gender: data.gender,
-        photo: data.photo || null
+        id: idNum, name: data.name, age: parseInt(data.age), city: data.city,
+        gender: data.gender, photo: data.photo || null, username: data.username || null,
+        question: data.question || null
     });
-    if (error) console.log('⚠️ Ошибка сохранения:', error.message);
-    else console.log('✅ Профиль сохранён в облако');
+    if (error) console.log('Ошибка сохранения:', error.message);
 }
 
 async function openPlayers() {
     showScreen('players-screen');
     const list = document.getElementById('players-list');
-
-    if (!dbAvailable || !sb) {
-        list.innerHTML = '<div class="loading">⚠️ База не подключена.<br><br>Проверь, что вставил свои ключи Supabase вверху файла script.js</div>';
-        return;
-    }
-
     list.innerHTML = '<div class="loading">Загружаем игроков...</div>';
     const { data, error } = await sb.from('profiles').select('*');
-
-    if (error) {
-        list.innerHTML = '<div class="loading">⚠️ Ошибка базы:<br>' + error.message + '</div>';
-        return;
-    }
-
+    if (error) { list.innerHTML = '<div class="loading">⚠️ ' + error.message + '</div>'; return; }
     const others = (data || []).filter(p => String(p.id) !== String(userData.telegramId));
-    if (others.length === 0) {
-        list.innerHTML = '<div class="loading">Пока нет других игроков 😢<br>Пригласи друзей в игру!</div>';
-        return;
-    }
-
+    if (!others.length) { list.innerHTML = '<div class="loading">Пока нет других игроков 😢</div>'; return; }
     list.innerHTML = others.map(p =>
-        '<div class="player-card">' +
-            '<div class="player-photo" style="background-image:url(' + (p.photo || '') + ')">' + (p.photo ? '' : '💕') + '</div>' +
-            '<div class="player-info">' +
-                '<div class="player-name">' + escapeHtml(p.name) + '</div>' +
-                '<div class="player-meta">' + p.age + ' лет · ' + escapeHtml(p.city) + '</div>' +
-            '</div>' +
-        '</div>'
+        '<div class="player-card"><div class="player-photo" style="background-image:url(' + (p.photo || '') + ')">' + (p.photo ? '' : '💕') + '</div>' +
+        '<div class="player-info"><div class="player-name">' + escapeHtml(p.name) + '</div>' +
+        '<div class="player-meta">' + p.age + ' лет · ' + escapeHtml(p.city) + '</div></div></div>'
     ).join('');
 }
 
@@ -118,26 +71,23 @@ function setAvatar(elId, src) {
     else { el.style.backgroundImage = 'none'; el.textContent = '📷'; }
 }
 
-// ===== СТАРТ =====
+// ===== СТАРТ / РЕГИСТРАЦИЯ =====
 function startApp() {
     const saved = loadProfile();
-    if (saved) { userData = saved; showProfile(); }
+    if (saved) { userData = Object.assign(userData, saved); showProfile(); }
     else { showScreen('registration-screen'); prefillFromTelegram(); }
 }
-
-let userData = {
-    name: '', age: '', city: '', gender: '', photo: '',
-    telegramId: (tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.id : 'unknown'
-};
 
 function prefillFromTelegram() {
     const tgUser = tg.initDataUnsafe && tg.initDataUnsafe.user;
     if (tgUser && tgUser.first_name) {
         document.getElementById('user-name').value = tgUser.first_name + ' ' + (tgUser.last_name || '');
     }
+    if (tgUser && tgUser.username) {
+        document.getElementById('user-username').value = '@' + tgUser.username;
+    }
 }
 
-// ===== РЕГИСТРАЦИЯ =====
 function selectGender(gender) {
     userData.gender = gender;
     document.querySelectorAll('.gender-btn').forEach(btn => {
@@ -171,7 +121,6 @@ function uploadPhoto() {
         compressImage(file, (compressed) => {
             userData.photo = compressed;
             setAvatar('avatar-preview', compressed);
-            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
         });
     };
     input.click();
@@ -181,22 +130,19 @@ function submitRegistration() {
     const name = document.getElementById('user-name').value.trim();
     const age = document.getElementById('user-age').value.trim();
     const city = document.getElementById('user-city').value.trim();
+    const username = document.getElementById('user-username').value.trim();
 
     if (!name || !age || !city || !userData.gender) { alert('Заполни все поля и выбери пол!'); return; }
     if (parseInt(age) < 16) { alert('Игра доступна с 16 лет!'); return; }
 
-    userData.name = name;
-    userData.age = age;
-    userData.city = city;
-
+    userData.name = name; userData.age = age; userData.city = city; userData.username = username;
     saveProfile(userData);
     saveProfileToCloud(userData);
     showProfile();
-    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
 }
 
-// ===== ПРОФИЛЬ =====
 function showProfile() {
+    stopPolling();
     setAvatar('profile-photo', userData.photo);
     const genderText = userData.gender === 'male' ? '👨 Парень' : '👩 Девушка';
     document.getElementById('profile-info').innerHTML =
@@ -210,7 +156,201 @@ function editProfile() {
     document.getElementById('user-name').value = userData.name;
     document.getElementById('user-age').value = userData.age;
     document.getElementById('user-city').value = userData.city;
+    document.getElementById('user-username').value = userData.username || '';
     setAvatar('avatar-preview', userData.photo);
     if (userData.gender) selectGender(userData.gender);
     showScreen('registration-screen');
+}
+
+// ===== ВОПРОС И ПОИСК =====
+function openQuestion() {
+    document.getElementById('question-input').value = userData.question || '';
+    showScreen('question-screen');
+}
+
+async function saveQuestionAndSearch() {
+    const q = document.getElementById('question-input').value.trim();
+    if (!q) { alert('Придумай вопрос!'); return; }
+    userData.question = q;
+    saveProfile(userData);
+    await saveProfileToCloud(userData);
+    startSearch();
+}
+
+function stopPolling() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } }
+
+async function startSearch() {
+    showScreen('search-screen');
+    document.getElementById('search-status').textContent = 'Сканируем сердца поблизости 🔭';
+    await sb.from('profiles').update({ status: 'searching' }).eq('id', Number(userData.telegramId));
+    stopPolling();
+    pollTimer = setInterval(searchTick, 3000);
+    searchTick();
+}
+
+async function searchTick() {
+    const myId = Number(userData.telegramId);
+
+    // 1. Проверяем, не появилась ли игра
+    const { data: games } = await sb.from('games').select('*')
+        .or('player1.eq.' + myId + ',player2.eq.' + myId)
+        .neq('status', 'done').limit(1);
+    if (games && games.length) {
+        stopPolling();
+        currentGame = games[0];
+        renderRound();
+        return;
+    }
+
+    // 2. Ищем соперника
+    const { data: candidates } = await sb.from('profiles').select('*')
+        .eq('status', 'searching').neq('id', myId).neq('gender', userData.gender).limit(1);
+    if (candidates && candidates.length) {
+        const opp = candidates[0];
+        const { error } = await sb.from('games').insert({
+            player1: myId, player2: opp.id,
+            q1: userData.question, q2: opp.question
+        });
+        if (!error) {
+            await sb.from('profiles').update({ status: 'in_game' }).in('id', [myId, opp.id]);
+            document.getElementById('search-status').textContent = 'Пара найдена! 🎉';
+        }
+    }
+}
+
+async function cancelSearch() {
+    stopPolling();
+    await sb.from('profiles').update({ status: 'idle' }).eq('id', Number(userData.telegramId));
+    showProfile();
+}
+
+// ===== РАУНД =====
+function myRole(g) {
+    return String(g.player1) === String(userData.telegramId) ? 'p1' : 'p2';
+}
+
+async function loadOpponent(g) {
+    const oppId = myRole(g) === 'p1' ? g.player2 : g.player1;
+    const { data } = await sb.from('profiles').select('*').eq('id', oppId).single();
+    return data;
+}
+
+async function renderRound() {
+    const g = currentGame;
+    const role = myRole(g);
+    const myAnswer = role === 'p1' ? g.a1 : g.a2;
+    const oppAnswer = role === 'p1' ? g.a2 : g.a1;
+    const myChoice = role === 'p1' ? g.c1 : g.c2;
+
+    if (g.status === 'done') { showResult(); return; }
+
+    if (g.status === 'answers' && !myAnswer) {
+        // Экран ответа (не перерисовываем, если уже на нём)
+        if (!document.getElementById('round-answer-screen').classList.contains('active')) {
+            const oppQ = role === 'p1' ? g.q2 : g.q1;
+            document.getElementById('round-question-text').textContent = oppQ || 'Расскажи о себе 😉';
+            showScreen('round-answer-screen');
+        }
+        return;
+    }
+
+    if (g.status === 'answers' && myAnswer) {
+        showScreen('search-screen');
+        document.getElementById('search-status').textContent = 'Соперник пишет ответ... ⏳';
+        startRoundPolling();
+        return;
+    }
+
+    if (g.status === 'choose' && myChoice === null) {
+        if (!document.getElementById('round-choose-screen').classList.contains('active')) {
+            currentOpponent = await loadOpponent(g);
+            const opp = currentOpponent || {};
+            setAvatar('choose-photo', opp.photo);
+            document.getElementById('choose-info').innerHTML =
+                '<div class="profile-name">' + escapeHtml(opp.name) + '</div>' +
+                '<div class="profile-line">' + (opp.age || '') + ' лет · ' + escapeHtml(opp.city || '') + '</div>';
+            document.getElementById('choose-answer').textContent = oppAnswer || '...';
+            showScreen('round-choose-screen');
+        }
+        return;
+    }
+
+    if (g.status === 'choose' && myChoice !== null) {
+        showScreen('search-screen');
+        document.getElementById('search-status').textContent = 'Соперник делает выбор... ⏳';
+        startRoundPolling();
+        return;
+    }
+}
+
+function startRoundPolling() {
+    stopPolling();
+    pollTimer = setInterval(async () => {
+        const { data } = await sb.from('games').select('*').eq('id', currentGame.id).single();
+        if (data) { currentGame = data; renderRound(); }
+    }, 3000);
+}
+
+async function submitAnswer() {
+    const text = document.getElementById('round-answer-input').value.trim();
+    if (!text) { alert('Напиши ответ!'); return; }
+    const role = myRole(currentGame);
+    const field = role === 'p1' ? 'a1' : 'a2';
+    await sb.from('games').update({ [field]: text }).eq('id', currentGame.id);
+
+    const { data } = await sb.from('games').select('*').eq('id', currentGame.id).single();
+    currentGame = data;
+    if (data.a1 && data.a2 && data.status === 'answers') {
+        await sb.from('games').update({ status: 'choose' }).eq('id', data.id);
+        currentGame.status = 'choose';
+    }
+    renderRound();
+}
+
+async function submitChoice(like) {
+    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+    const role = myRole(currentGame);
+    const field = role === 'p1' ? 'c1' : 'c2';
+    await sb.from('games').update({ [field]: like }).eq('id', currentGame.id);
+
+    const { data } = await sb.from('games').select('*').eq('id', currentGame.id).single();
+    currentGame = data;
+    if (data.c1 !== null && data.c2 !== null && data.status !== 'done') {
+        await sb.from('games').update({ status: 'done' }).eq('id', data.id);
+        await sb.from('profiles').update({ status: 'idle' }).in('id', [data.player1, data.player2]);
+        currentGame.status = 'done';
+    }
+    renderRound();
+}
+
+async function showResult() {
+    stopPolling();
+    currentOpponent = currentOpponent || await loadOpponent(currentGame);
+    const opp = currentOpponent || {};
+    const match = currentGame.c1 && currentGame.c2;
+
+    if (match) {
+        document.getElementById('result-emoji').textContent = '💖';
+        document.getElementById('result-title').textContent = 'Это взаимно!';
+        let body = escapeHtml(opp.name) + ' тоже выбрал(а) тебя! 🎉';
+        if (opp.username) {
+            const u = opp.username.replace('@', '');
+            body += '<br><br>Напиши скорее: <a href="https://t.me/' + u + '" target="_blank">@' + u + '</a>';
+        } else {
+            body += '<br><br>Соперник не оставил @username 😢';
+        }
+        document.getElementById('result-body').innerHTML = body;
+    } else {
+        document.getElementById('result-emoji').textContent = '💔';
+        document.getElementById('result-title').textContent = 'Не в этот раз...';
+        document.getElementById('result-body').innerHTML = 'Симпатия не совпала. Но впереди ещё много сердец!';
+    }
+    showScreen('result-screen');
+}
+
+async function playAgain() {
+    await sb.from('profiles').update({ status: 'idle' }).eq('id', Number(userData.telegramId));
+    currentGame = null;
+    currentOpponent = null;
+    openQuestion();
 }
