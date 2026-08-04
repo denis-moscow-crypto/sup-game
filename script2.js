@@ -152,6 +152,17 @@ async function submitChoice(like) {
     if (data.c1 !== null && data.c2 !== null && data.status !== 'done') {
         await sb.from('games').update({ status: 'done' }).eq('id', data.id);
         await sb.from('profiles').update({ status: 'idle' }).in('id', [data.player1, data.player2]);
+        const match = data.c1 && data.c2;
+        for (const pid of [data.player1, data.player2]) {
+            const { data: prof } = await sb.from('profiles').select('score, wins, games_played').eq('id', pid).single();
+            if (prof) {
+                await sb.from('profiles').update({
+                    games_played: (prof.games_played || 0) + 1,
+                    wins: (prof.wins || 0) + (match ? 1 : 0),
+                    score: (prof.score || 0) + (match ? 10 : 2)
+                }).eq('id', pid);
+            }
+        }
         currentGame.status = 'done';
     }
     renderRound();
@@ -192,4 +203,51 @@ async function playAgain() {
     currentGame = null;
     currentOpponent = null;
     openQuestion();
+}
+
+async function openRating() {
+    showScreen('rating-screen');
+    const list = document.getElementById('rating-list');
+    if (!sb) { list.innerHTML = '<div class="loading">⚠️ База не подключена</div>'; return; }
+    list.innerHTML = '<div class="loading">Загружаем рейтинг...</div>';
+    const { data, error } = await sb.from('profiles').select('*').order('score', { ascending: false }).limit(10);
+    if (error) { list.innerHTML = '<div class="loading">⚠️ ' + error.message + '</div>'; return; }
+    const medals = ['🥇', '🥈', ''];
+    list.innerHTML = (data || []).map((p, i) =>
+        '<div class="player-card"><div class="player-photo" style="background-image:url(' + (p.photo || '') + ')">' + (p.photo ? '' : '💕') + '</div>' +
+        '<div class="player-info"><div class="player-name">' + (medals[i] || (i + 1) + '.') + ' ' + escapeHtml(p.name) + '</div>' +
+        '<div class="player-meta">💎 ' + (p.score || 0) + ' · ❤️ ' + (p.wins || 0) + ' · 🎮 ' + (p.games_played || 0) + '</div></div></div>'
+    ).join('');
+}
+
+const BADGES = [
+    { id: 'first', emoji: '🌱', name: 'Первые шаги', desc: 'Сыграть первую игру', test: s => (s.games_played || 0) >= 1 },
+    { id: 'love1', emoji: '💘', name: 'Сердцеед', desc: 'Первая взаимная симпатия', test: s => (s.wins || 0) >= 1 },
+    { id: 'love3', emoji: '🔥', name: 'Казанова', desc: '3 взаимные симпатии', test: s => (s.wins || 0) >= 3 },
+    { id: 'love10', emoji: '👑', name: 'Легенда СУП', desc: '10 взаимных симпатий', test: s => (s.wins || 0) >= 10 },
+    { id: 'games10', emoji: '🎮', name: 'Завсегдатай', desc: 'Сыграть 10 игр', test: s => (s.games_played || 0) >= 10 },
+    { id: 'score100', emoji: '💎', name: 'Богач', desc: 'Набрать 100 очков', test: s => (s.score || 0) >= 100 }
+];
+
+function badgesFor(stats) {
+    return BADGES.filter(b => b.test(stats));
+}
+
+async function openAchievements() {
+    showScreen('achievements-screen');
+    const list = document.getElementById('achievements-list');
+    list.innerHTML = '<div class="loading">Загружаем...</div>';
+    let stats = userData;
+    if (sb) {
+        const { data } = await sb.from('profiles').select('score, wins, games_played').eq('id', Number(userData.telegramId)).single();
+        if (data) stats = data;
+    }
+    const unlocked = badgesFor(stats);
+    list.innerHTML = BADGES.map(b => {
+        const has = unlocked.some(u => u.id === b.id);
+        return '<div class="player-card" style="' + (has ? '' : 'opacity:0.45;') + '">' +
+            '<div class="player-photo" style="background:#ffe0eb;">' + (has ? b.emoji : '🔒') + '</div>' +
+            '<div class="player-info"><div class="player-name">' + b.name + '</div>' +
+            '<div class="player-meta">' + b.desc + (has ? ' · ПОЛУЧЕНО!' : '') + '</div></div></div>';
+    }).join('');
 }
