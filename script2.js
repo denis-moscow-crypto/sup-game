@@ -1,12 +1,7 @@
 function openQuestion() {
     document.getElementById('question-input').value = userData.question || '';
-                document.getElementById('choose-answer').textContent = oppAnswer || '...';
-            const oppSl = role === 'p1' ? g.sl2 : g.sl1;
-            document.getElementById('superlike-banner').style.display = oppSl ? 'block' : 'none';
-            const oppC = role === 'p1' ? g.c2 : g.c1;
-            document.getElementById('premium-hint').style.display = (userData.premium && oppC === true) ? 'block' : 'none';
-            document.getElementById('superlike-btn').style.display = (userData.superlikes || 0) > 0 ? 'inline-block' : 'none';
-            showScreen('round-choose-screen');
+    document.getElementById('blind-checkbox').checked = !!userData.blind;
+    showScreen('question-screen');
 }
 
 async function saveQuestionAndSearch() {
@@ -112,6 +107,11 @@ async function renderRound() {
                     '<div class="profile-line">' + (opp.age || '') + ' лет · ' + escapeHtml(opp.city || '') + '</div>';
             }
             document.getElementById('choose-answer').textContent = oppAnswer || '...';
+            const oppSl = role === 'p1' ? g.sl2 : g.sl1;
+            document.getElementById('superlike-banner').style.display = oppSl ? 'block' : 'none';
+            const oppC = role === 'p1' ? g.c2 : g.c1;
+            document.getElementById('premium-hint').style.display = (userData.premium && oppC === true) ? 'block' : 'none';
+            document.getElementById('superlike-btn').style.display = (userData.superlikes || 0) > 0 ? 'inline-block' : 'none';
             showScreen('round-choose-screen');
         }
         return;
@@ -130,6 +130,32 @@ function startRoundPolling() {
         const { data } = await sb.from('games').select('*').eq('id', currentGame.id).single();
         if (data) { currentGame = data; renderRound(); }
     }, 3000);
+}
+
+async function applyRefBonus(pid) {
+    const { data: p } = await sb.from('profiles').select('referred_by, ref_counted, score').eq('id', pid).single();
+    if (p && p.referred_by && !p.ref_counted) {
+        await sb.from('profiles').update({ ref_counted: true, score: (p.score || 0) + 5 }).eq('id', pid);
+        const { data: ref } = await sb.from('profiles').select('invites, score').eq('id', p.referred_by).single();
+        if (ref) {
+            await sb.from('profiles').update({ invites: (ref.invites || 0) + 1, score: (ref.score || 0) + 5 }).eq('id', p.referred_by);
+        }
+    }
+}
+
+async function finishGameStats(data) {
+    const match = data.c1 && data.c2;
+    for (const pid of [data.player1, data.player2]) {
+        const { data: prof } = await sb.from('profiles').select('score, wins, games_played').eq('id', pid).single();
+        if (prof) {
+            await sb.from('profiles').update({
+                games_played: (prof.games_played || 0) + 1,
+                wins: (prof.wins || 0) + (match ? 1 : 0),
+                score: (prof.score || 0) + (match ? 10 : 2)
+            }).eq('id', pid);
+        }
+        await applyRefBonus(pid);
+    }
 }
 
 async function submitAnswer() {
@@ -157,17 +183,28 @@ async function submitChoice(like) {
     if (data.c1 !== null && data.c2 !== null && data.status !== 'done') {
         await sb.from('games').update({ status: 'done' }).eq('id', data.id);
         await sb.from('profiles').update({ status: 'idle' }).in('id', [data.player1, data.player2]);
-        const match = data.c1 && data.c2;
-        for (const pid of [data.player1, data.player2]) {
-            const { data: prof } = await sb.from('profiles').select('score, wins, games_played').eq('id', pid).single();
-            if (prof) {
-                await sb.from('profiles').update({
-                    games_played: (prof.games_played || 0) + 1,
-                    wins: (prof.wins || 0) + (match ? 1 : 0),
-                    score: (prof.score || 0) + (match ? 10 : 2)
-                }).eq('id', pid);
-            }
-        }
+        await finishGameStats(data);
+        currentGame.status = 'done';
+    }
+    renderRound();
+}
+
+async function submitSuperlike() {
+    if ((userData.superlikes || 0) <= 0) { alert('Нет суперлайков! Купи в магазине 💎'); return; }
+    await sb.from('profiles').update({ superlikes: (userData.superlikes || 0) - 1 }).eq('id', Number(userData.telegramId));
+    userData.superlikes = (userData.superlikes || 0) - 1;
+    const role = myRole(currentGame);
+    const upd = {};
+    upd[role === 'p1' ? 'sl1' : 'sl2'] = true;
+    upd[role === 'p1' ? 'c1' : 'c2'] = true;
+    await sb.from('games').update(upd).eq('id', currentGame.id);
+    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+    const { data } = await sb.from('games').select('*').eq('id', currentGame.id).single();
+    currentGame = data;
+    if (data.c1 !== null && data.c2 !== null && data.status !== 'done') {
+        await sb.from('games').update({ status: 'done' }).eq('id', data.id);
+        await sb.from('profiles').update({ status: 'idle' }).in('id', [data.player1, data.player2]);
+        await finishGameStats(data);
         currentGame.status = 'done';
     }
     renderRound();
@@ -220,7 +257,7 @@ async function openRating() {
     const medals = ['🥇', '🥈', ''];
     list.innerHTML = (data || []).map((p, i) =>
         '<div class="player-card"><div class="player-photo" style="background-image:url(' + (p.photo || '') + ')">' + (p.photo ? '' : '💕') + '</div>' +
-        '<div class="player-info"><div class="player-name">' + (medals[i] || (i + 1) + '.') + ' ' + escapeHtml(p.name) + '</div>' +
+        '<div class="player-info"><div class="player-name">' + (medals[i] || (i + 1) + '.') + ' ' + escapeHtml(p.name) + (p.premium ? ' 💎' : '') + '</div>' +
         '<div class="player-meta">💎 ' + (p.score || 0) + ' · ❤️ ' + (p.wins || 0) + ' · 🎮 ' + (p.games_played || 0) + '</div></div></div>'
     ).join('');
 }
@@ -231,7 +268,8 @@ const BADGES = [
     { id: 'love3', emoji: '🔥', name: 'Казанова', desc: '3 взаимные симпатии', test: s => (s.wins || 0) >= 3 },
     { id: 'love10', emoji: '👑', name: 'Легенда СУП', desc: '10 взаимных симпатий', test: s => (s.wins || 0) >= 10 },
     { id: 'games10', emoji: '🎮', name: 'Завсегдатай', desc: 'Сыграть 10 игр', test: s => (s.games_played || 0) >= 10 },
-    { id: 'score100', emoji: '💎', name: 'Богач', desc: 'Набрать 100 очков', test: s => (s.score || 0) >= 100 }
+    { id: 'score100', emoji: '💎', name: 'Богач', desc: 'Набрать 100 очков', test: s => (s.score || 0) >= 100 },
+    { id: 'ref3', emoji: '💌', name: 'Посол любви', desc: 'Пригласить 3 друзей', test: s => (s.invites || 0) >= 3 }
 ];
 
 function badgesFor(stats) {
@@ -244,7 +282,7 @@ async function openAchievements() {
     list.innerHTML = '<div class="loading">Загружаем...</div>';
     let stats = userData;
     if (sb) {
-        const { data } = await sb.from('profiles').select('score, wins, games_played').eq('id', Number(userData.telegramId)).single();
+        const { data } = await sb.from('profiles').select('score, wins, games_played, invites').eq('id', Number(userData.telegramId)).single();
         if (data) stats = data;
     }
     const unlocked = badgesFor(stats);
@@ -263,35 +301,4 @@ function openShop() {
 
 function openBuy(param) {
     window.open('https://t.me/sup_love_game_bot?start=' + param, '_blank');
-}
-
-async function submitSuperlike() {
-    if ((userData.superlikes || 0) <= 0) { alert('Нет суперлайков! Купи в магазине 💎'); return; }
-    await sb.from('profiles').update({ superlikes: (userData.superlikes || 0) - 1 }).eq('id', Number(userData.telegramId));
-    userData.superlikes = (userData.superlikes || 0) - 1;
-    const role = myRole(currentGame);
-    const upd = {};
-    upd[role === 'p1' ? 'sl1' : 'sl2'] = true;
-    upd[role === 'p1' ? 'c1' : 'c2'] = true;
-    await sb.from('games').update(upd).eq('id', currentGame.id);
-    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-    const { data } = await sb.from('games').select('*').eq('id', currentGame.id).single();
-    currentGame = data;
-    if (data.c1 !== null && data.c2 !== null && data.status !== 'done') {
-        await sb.from('games').update({ status: 'done' }).eq('id', data.id);
-        await sb.from('profiles').update({ status: 'idle' }).in('id', [data.player1, data.player2]);
-        const match = data.c1 && data.c2;
-        for (const pid of [data.player1, data.player2]) {
-            const { data: prof } = await sb.from('profiles').select('score, wins, games_played').eq('id', pid).single();
-            if (prof) {
-                await sb.from('profiles').update({
-                    games_played: (prof.games_played || 0) + 1,
-                    wins: (prof.wins || 0) + (match ? 1 : 0),
-                    score: (prof.score || 0) + (match ? 10 : 2)
-                }).eq('id', pid);
-            }
-        }
-        currentGame.status = 'done';
-    }
-    renderRound();
 }
