@@ -1,66 +1,96 @@
-// Инициализация Telegram Web App
 const tg = window.Telegram.WebApp;
 tg.ready();
 tg.expand();
 
 let userData = {
-    name: '',
-    age: '',
-    city: '',
-    gender: '',
-    photo: '',
-    telegramId: tg.initDataUnsafe?.user?.id
+    name: '', age: '', city: '', gender: '', photo: '',
+    telegramId: (tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.id : 'unknown'
 };
 
-// Автозаполнение имени из Telegram
-const tgUser = tg.initDataUnsafe?.user;
-if (tgUser) {
-    userData.name = tgUser.first_name + (tgUser.last_name ? ' ' + tgUser.last_name : '');
-    if (tgUser.photo_url) {
-        userData.photo = tgUser.photo_url;
-    }
+// ===== СОХРАНЕНИЕ ДАННЫХ =====
+function saveProfile(data) {
+    localStorage.setItem('sup_profile', JSON.stringify(data));
+}
+function loadProfile() {
+    const saved = localStorage.getItem('sup_profile');
+    return saved ? JSON.parse(saved) : null;
 }
 
-// Переход между экранами
-function showScreen(screenId) {
+// ===== ЭКРАНЫ =====
+function showScreen(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById(screenId).classList.add('active');
+    document.getElementById(id).classList.add('active');
 }
 
-function startRegistration() {
-    showScreen('registration-screen');
-    // Заполняем имя и фото из Telegram
-    if (userData.name) {
-        document.getElementById('user-name').value = userData.name;
-    }
-    if (userData.photo) {
-        document.getElementById('avatar-preview').src = userData.photo;
+// ===== АВАТАР =====
+function setAvatar(elId, src) {
+    const el = document.getElementById(elId);
+    if (src) {
+        el.style.backgroundImage = 'url(' + src + ')';
+        el.textContent = '';
+    } else {
+        el.style.backgroundImage = 'none';
+        el.textContent = '📷';
     }
 }
 
+// ===== СТАРТ =====
+function startApp() {
+    const saved = loadProfile();
+    if (saved) {
+        userData = saved;
+        showProfile();  // сразу показываем сохранённый профиль
+    } else {
+        showScreen('registration-screen');
+        prefillFromTelegram();
+    }
+}
+
+function prefillFromTelegram() {
+    const tgUser = tg.initDataUnsafe && tg.initDataUnsafe.user;
+    if (tgUser && tgUser.first_name) {
+        document.getElementById('user-name').value =
+            tgUser.first_name + ' ' + (tgUser.last_name || '');
+    }
+}
+
+// ===== РЕГИСТРАЦИЯ =====
 function selectGender(gender) {
     userData.gender = gender;
     document.querySelectorAll('.gender-btn').forEach(btn => {
         btn.classList.toggle('selected', btn.dataset.gender === gender);
     });
-    // Haptic feedback
-    tg.HapticFeedback.impactOccurred('light');
+    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+}
+
+// Сжатие фото, чтобы не переполнить память
+function compressImage(file, callback) {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const scale = Math.min(1, 400 / Math.max(img.width, img.height));
+            canvas.width = Math.round(img.width * scale);
+            canvas.height = Math.round(img.height * scale);
+            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+            callback(canvas.toDataURL('image/jpeg', 0.8));
+        };
+        img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
 }
 
 function uploadPhoto() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
+    const input = document.getElementById('photo-input');
     input.onchange = (e) => {
         const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                document.getElementById('avatar-preview').src = event.target.result;
-                userData.photo = event.target.result;
-            };
-            reader.readAsDataURL(file);
-        }
+        if (!file) return;
+        compressImage(file, (compressed) => {
+            userData.photo = compressed;
+            setAvatar('avatar-preview', compressed);  // фото появляется СРАЗУ
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+        });
     };
     input.click();
 }
@@ -70,16 +100,12 @@ function submitRegistration() {
     const age = document.getElementById('user-age').value.trim();
     const city = document.getElementById('user-city').value.trim();
 
-    // Валидация
     if (!name || !age || !city || !userData.gender) {
-        alert('Пожалуйста, заполни все поля и выбери пол!');
-        tg.HapticFeedback.notificationOccurred('error');
+        alert('Заполни все поля и выбери пол!');
         return;
     }
-
     if (parseInt(age) < 16) {
         alert('Игра доступна с 16 лет!');
-        tg.HapticFeedback.notificationOccurred('error');
         return;
     }
 
@@ -87,11 +113,31 @@ function submitRegistration() {
     userData.age = age;
     userData.city = city;
 
-    // Показываем уведомление Telegram
-    tg.MainButton.setText('Профиль создан! 🎉');
-    tg.MainButton.show();
-    tg.HapticFeedback.notificationOccurred('success');
+    saveProfile(userData);  // ← ВОТ ТУТ СОХРАНЯЕМ!
+    showProfile();
+    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+}
 
-    // Отправляем данные боту
-    tg.sendData(JSON.stringify(userData));
+// ===== ПРОФИЛЬ =====
+function showProfile() {
+    setAvatar('profile-photo', userData.photo);
+    const genderText = userData.gender === 'male' ? '👨 Парень' : '👩 Девушка';
+    document.getElementById('profile-info').innerHTML =
+        '<div class="profile-name">' + userData.name + '</div>' +
+        '<div class="profile-line">' + userData.age + ' лет · ' + userData.city + '</div>' +
+        '<div class="profile-line">' + genderText + '</div>';
+    showScreen('profile-screen');
+}
+
+function editProfile() {
+    document.getElementById('user-name').value = userData.name;
+    document.getElementById('user-age').value = userData.age;
+    document.getElementById('user-city').value = userData.city;
+    setAvatar('avatar-preview', userData.photo);
+    if (userData.gender) selectGender(userData.gender);
+    showScreen('registration-screen');
+}
+
+function nextStep() {
+    alert('Скоро здесь будет создание вопроса для противоположного пола! 😉');
 }
