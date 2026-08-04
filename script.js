@@ -1,143 +1,114 @@
-const tg = window.Telegram.WebApp;
-tg.ready();
-tg.expand();
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
-let userData = {
-    name: '', age: '', city: '', gender: '', photo: '',
-    telegramId: (tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.id : 'unknown'
-};
-
-// ===== СОХРАНЕНИЕ ДАННЫХ =====
-function saveProfile(data) {
-    localStorage.setItem('sup_profile', JSON.stringify(data));
-}
-function loadProfile() {
-    const saved = localStorage.getItem('sup_profile');
-    return saved ? JSON.parse(saved) : null;
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #ff6b9d 0%, #ff4778 100%);
+    min-height: 100vh;
+    color: white;
+    overflow-x: hidden;
 }
 
-// ===== ЭКРАНЫ =====
-function showScreen(id) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
+.app { min-height: 100vh; position: relative; }
+
+.screen { display: none; min-height: 100vh; padding: 20px; }
+.screen.active {
+    display: flex; align-items: center; justify-content: center;
+    animation: fadeIn 0.5s;
 }
 
-// ===== АВАТАР =====
-function setAvatar(elId, src) {
-    const el = document.getElementById(elId);
-    if (src) {
-        el.style.backgroundImage = 'url(' + src + ')';
-        el.textContent = '';
-    } else {
-        el.style.backgroundImage = 'none';
-        el.textContent = '📷';
-    }
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
-// ===== СТАРТ =====
-function startApp() {
-    const saved = loadProfile();
-    if (saved) {
-        userData = saved;
-        showProfile();  // сразу показываем сохранённый профиль
-    } else {
-        showScreen('registration-screen');
-        prefillFromTelegram();
-    }
+.hearts-bg { position: absolute; width: 100%; height: 100%; pointer-events: none; overflow: hidden; }
+.hearts-bg span { position: absolute; font-size: 30px; opacity: 0.3; animation: float 8s infinite ease-in-out; }
+.hearts-bg span:nth-child(1) { left: 10%; animation-delay: 0s; }
+.hearts-bg span:nth-child(2) { left: 30%; animation-delay: 2s; }
+.hearts-bg span:nth-child(3) { left: 50%; animation-delay: 4s; }
+.hearts-bg span:nth-child(4) { left: 70%; animation-delay: 1s; }
+.hearts-bg span:nth-child(5) { left: 90%; animation-delay: 3s; }
+
+@keyframes float {
+    0%, 100% { transform: translateY(100vh) rotate(0deg); }
+    50% { transform: translateY(-100px) rotate(180deg); }
 }
 
-function prefillFromTelegram() {
-    const tgUser = tg.initDataUnsafe && tg.initDataUnsafe.user;
-    if (tgUser && tgUser.first_name) {
-        document.getElementById('user-name').value =
-            tgUser.first_name + ' ' + (tgUser.last_name || '');
-    }
+.welcome-content { text-align: center; z-index: 10; position: relative; }
+
+.logo {
+    font-size: 80px; font-weight: bold; margin-bottom: 10px;
+    background: linear-gradient(45deg, #fff, #ffe0eb);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
-// ===== РЕГИСТРАЦИЯ =====
-function selectGender(gender) {
-    userData.gender = gender;
-    document.querySelectorAll('.gender-btn').forEach(btn => {
-        btn.classList.toggle('selected', btn.dataset.gender === gender);
-    });
-    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+.tagline { font-size: 24px; margin-bottom: 20px; letter-spacing: 2px; }
+.subtitle { font-size: 16px; opacity: 0.9; margin-bottom: 40px; max-width: 280px; margin-left: auto; margin-right: auto; }
+
+.btn-primary {
+    background: white; color: #ff4778; border: none;
+    padding: 16px 40px; font-size: 18px; font-weight: bold;
+    border-radius: 50px; cursor: pointer;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    transition: all 0.3s; margin-top: 10px; width: 100%;
+}
+.btn-primary:active { transform: scale(0.95); }
+
+.btn-secondary {
+    background: transparent; color: #ff4778; border: 2px solid #ff4778;
+    padding: 14px 30px; font-size: 16px; font-weight: bold;
+    border-radius: 50px; cursor: pointer; margin-top: 10px; width: 100%;
 }
 
-// Сжатие фото, чтобы не переполнить память
-function compressImage(file, callback) {
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-        const img = new Image();
-        img.onload = () => {
-            const canvas = document.createElement('canvas');
-            const scale = Math.min(1, 400 / Math.max(img.width, img.height));
-            canvas.width = Math.round(img.width * scale);
-            canvas.height = Math.round(img.height * scale);
-            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-            callback(canvas.toDataURL('image/jpeg', 0.8));
-        };
-        img.src = ev.target.result;
-    };
-    reader.readAsDataURL(file);
+.form-container {
+    background: rgba(255,255,255,0.95); padding: 30px 20px;
+    border-radius: 25px; width: 100%; max-width: 400px;
+    color: #333; box-shadow: 0 10px 40px rgba(0,0,0,0.2);
 }
+.form-container h2 { text-align: center; color: #ff4778; margin-bottom: 25px; }
 
-function uploadPhoto() {
-    const input = document.getElementById('photo-input');
-    input.onchange = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        compressImage(file, (compressed) => {
-            userData.photo = compressed;
-            setAvatar('avatar-preview', compressed);  // фото появляется СРАЗУ
-            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-        });
-    };
-    input.click();
+.avatar-upload { display: flex; flex-direction: column; align-items: center; margin-bottom: 20px; cursor: pointer; }
+
+.avatar-circle {
+    width: 120px; height: 120px; border-radius: 50%;
+    border: 4px solid #ff4778; background-color: #ffe0eb;
+    background-size: cover; background-position: center;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 40px; margin-bottom: 10px; overflow: hidden;
 }
+.avatar-circle.big { width: 140px; height: 140px; }
 
-function submitRegistration() {
-    const name = document.getElementById('user-name').value.trim();
-    const age = document.getElementById('user-age').value.trim();
-    const city = document.getElementById('user-city').value.trim();
+.upload-hint { color: #ff4778; font-size: 14px; }
 
-    if (!name || !age || !city || !userData.gender) {
-        alert('Заполни все поля и выбери пол!');
-        return;
-    }
-    if (parseInt(age) < 16) {
-        alert('Игра доступна с 16 лет!');
-        return;
-    }
-
-    userData.name = name;
-    userData.age = age;
-    userData.city = city;
-
-    saveProfile(userData);  // ← ВОТ ТУТ СОХРАНЯЕМ!
-    showProfile();
-    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+.input {
+    width: 100%; padding: 14px 20px; margin-bottom: 12px;
+    border: 2px solid #eee; border-radius: 15px; font-size: 16px;
 }
+.input:focus { outline: none; border-color: #ff4778; }
 
-// ===== ПРОФИЛЬ =====
-function showProfile() {
-    setAvatar('profile-photo', userData.photo);
-    const genderText = userData.gender === 'male' ? '👨 Парень' : '👩 Девушка';
-    document.getElementById('profile-info').innerHTML =
-        '<div class="profile-name">' + userData.name + '</div>' +
-        '<div class="profile-line">' + userData.age + ' лет · ' + userData.city + '</div>' +
-        '<div class="profile-line">' + genderText + '</div>';
-    showScreen('profile-screen');
+.gender-select { display: flex; gap: 10px; margin-bottom: 15px; }
+.gender-btn {
+    flex: 1; padding: 14px; border: 2px solid #eee; background: white;
+    border-radius: 15px; font-size: 16px; cursor: pointer;
 }
+.gender-btn.selected { background: #ff4778; color: white; border-color: #ff4778; }
 
-function editProfile() {
-    document.getElementById('user-name').value = userData.name;
-    document.getElementById('user-age').value = userData.age;
-    document.getElementById('user-city').value = userData.city;
-    setAvatar('avatar-preview', userData.photo);
-    if (userData.gender) selectGender(userData.gender);
-    showScreen('registration-screen');
+.profile-card { display: flex; flex-direction: column; align-items: center; margin-bottom: 20px; }
+.profile-info { text-align: center; }
+.profile-name { font-size: 22px; font-weight: bold; color: #ff4778; margin-top: 10px; }
+.profile-line { font-size: 15px; color: #666; margin-top: 4px; }
+/* Список игроков */
+.players-list { max-height: 55vh; overflow-y: auto; margin-bottom: 15px; }
+.player-card {
+    display: flex; align-items: center; gap: 12px;
+    background: #fff0f5; border-radius: 15px; padding: 10px; margin-bottom: 10px;
 }
-
-function nextStep() {
-    alert('Скоро здесь будет создание вопроса для противоположного пола! 😉');
+.player-photo {
+    width: 60px; height: 60px; border-radius: 50%;
+    background-color: #ffd0e0; background-size: cover; background-position: center;
+    display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0;
 }
+.player-name { font-weight: bold; color: #ff4778; }
+.player-meta { font-size: 13px; color: #888; }
+.loading { text-align: center; color: #888; padding: 20px; }
