@@ -1,5 +1,9 @@
+// =====================================================
+//  ВСТАВЬ СВОЙ КЛЮЧ!
+// =====================================================
 const SUPABASE_URL = 'https://oreexiwvjhwssznwxndn.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9yZWV4aXd2amh3c3N6bnd4bmRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU4MzAzNTUsImV4cCI6MjEwMTQwNjM1NX0.Jq33H7nyHOTx00_xBYEOsS5u02C6_i_iDnQyGcbaTZM';
+// =====================================================
 
 let sb = null;
 try {
@@ -18,7 +22,7 @@ const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp 
 try { tg.ready(); tg.expand(); } catch (e) {}
 
 let userData = {
-    name: '', age: '', city: '', gender: '', photo: '', username: '', question: '',
+    name: '', age: '', city: '', gender: '', photo: '', username: '', question: '', blind: false,
     telegramId: (tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.id : 'unknown'
 };
 
@@ -59,7 +63,7 @@ async function saveProfileToCloud(data) {
     const { error } = await sb.from('profiles').upsert({
         id: idNum, name: data.name, age: parseInt(data.age), city: data.city,
         gender: data.gender, photo: data.photo || null, username: data.username || null,
-        question: data.question || null
+        question: data.question || null, blind: !!data.blind
     });
     if (error) console.log('Ошибка сохранения:', error.message);
 }
@@ -186,8 +190,10 @@ function editProfile() {
     showScreen('registration-screen');
 }
 
+// ===== ВОПРОС И ПОИСК =====
 function openQuestion() {
     document.getElementById('question-input').value = userData.question || '';
+    document.getElementById('blind-checkbox').checked = !!userData.blind;
     showScreen('question-screen');
 }
 
@@ -195,6 +201,7 @@ async function saveQuestionAndSearch() {
     const q = document.getElementById('question-input').value.trim();
     if (!q) { alert('Придумай вопрос!'); return; }
     userData.question = q;
+    userData.blind = document.getElementById('blind-checkbox').checked;
     saveProfile(userData);
     await saveProfileToCloud(userData);
     startSearch();
@@ -228,7 +235,8 @@ async function searchTick() {
     if (candidates && candidates.length) {
         const opp = candidates[0];
         const { error } = await sb.from('games').insert({
-            player1: myId, player2: opp.id, q1: userData.question, q2: opp.question
+            player1: myId, player2: opp.id, q1: userData.question, q2: opp.question,
+            blind: !!(userData.blind || opp.blind)
         });
         if (!error) {
             await sb.from('profiles').update({ status: 'in_game' }).in('id', [myId, opp.id]);
@@ -243,6 +251,7 @@ async function cancelSearch() {
     showProfile();
 }
 
+// ===== РАУНД =====
 function myRole(g) { return String(g.player1) === String(userData.telegramId) ? 'p1' : 'p2'; }
 
 async function loadOpponent(g) {
@@ -279,10 +288,19 @@ async function renderRound() {
         if (!document.getElementById('round-choose-screen').classList.contains('active')) {
             currentOpponent = await loadOpponent(g);
             const opp = currentOpponent || {};
-            setAvatar('choose-photo', opp.photo);
-            document.getElementById('choose-info').innerHTML =
-                '<div class="profile-name">' + escapeHtml(opp.name) + '</div>' +
-                '<div class="profile-line">' + (opp.age || '') + ' лет · ' + escapeHtml(opp.city || '') + '</div>';
+            if (g.blind) {
+                // СЛЕПОЙ РЕЖИМ: скрываем фото и имя
+                setAvatar('choose-photo', null);
+                document.getElementById('choose-photo').textContent = '🕶️';
+                document.getElementById('choose-info').innerHTML =
+                    '<div class="profile-name">Таинственный незнакомец</div>' +
+                    '<div class="profile-line">' + (opp.age || '') + ' лет · ' + escapeHtml(opp.city || '') + '</div>';
+            } else {
+                setAvatar('choose-photo', opp.photo);
+                document.getElementById('choose-info').innerHTML =
+                    '<div class="profile-name">' + escapeHtml(opp.name) + '</div>' +
+                    '<div class="profile-line">' + (opp.age || '') + ' лет · ' + escapeHtml(opp.city || '') + '</div>';
+            }
             document.getElementById('choose-answer').textContent = oppAnswer || '...';
             showScreen('round-choose-screen');
         }
@@ -339,28 +357,31 @@ async function showResult() {
     currentOpponent = currentOpponent || await loadOpponent(currentGame);
     const opp = currentOpponent || {};
     const match = currentGame.c1 && currentGame.c2;
+
     if (match) {
-        document.getElementById('result-emoji').textContent = '💖';
-        document.getElementById('result-title').textContent = 'Это взаимно!';
-        let body = escapeHtml(opp.name) + ' тоже выбрал(а) тебя! 🎉';
+        document.getElementById('result-emoji').textContent = currentGame.blind ? '🕶️' : '💖';
+        document.getElementById('result-title').textContent = currentGame.blind ? 'Завеса раскрыта!' : 'Это взаимно!';
+        let body = '';
+        if (opp.photo) {
+            body += '<div class="avatar-circle big" style="margin:0 auto 10px;background-image:url(' + opp.photo + ')"></div>';
+        }
+        body += '<div class="profile-name">' + escapeHtml(opp.name) + '</div>';
+        body += '<div class="profile-line">тоже выбрал(а) тебя! 🎉</div>';
         if (opp.username) {
             const u = opp.username.replace('@', '');
-            body += '<br><br>Напиши скорее: <a href="https://t.me/' + u + '" target="_blank">@' + u + '</a>';
-        } else {
-            body += '<br><br>Соперник не оставил @username 😢';
+            body += '<br>Напиши скорее: <a href="https://t.me/' + u + '" target="_blank">@' + u + '</a>';
         }
         document.getElementById('result-body').innerHTML = body;
     } else {
         document.getElementById('result-emoji').textContent = '💔';
         document.getElementById('result-title').textContent = 'Не в этот раз...';
-        document.getElementById('result-body').innerHTML = 'Симпатия не совпала. Но впереди ещё много сердец!';
+        document.getElementById('result-body').innerHTML = currentGame.blind
+            ? 'Таинственный незнакомец остался тайной 🕶️<br>Но впереди ещё много сердец!'
+            : 'Симпатия не совпала. Но впереди ещё много сердец!';
     }
     showScreen('result-screen');
 }
 
 async function playAgain() {
     if (sb) await sb.from('profiles').update({ status: 'idle' }).eq('id', Number(userData.telegramId));
-    currentGame = null;
-    currentOpponent = null;
-    openQuestion();
-}
+   
