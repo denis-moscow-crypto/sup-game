@@ -237,6 +237,7 @@ async function showResult() {
             ? 'Таинственный незнакомец остался тайной 🕶️<br>Но впереди ещё много сердец!'
             : 'Симпатия не совпала. Но впереди ещё много сердец!';
     }
+      if (match) burstHearts();
     showScreen('result-screen');
 }
 
@@ -301,4 +302,19 @@ function openShop() {
 
 function openBuy(param) {
     window.open('https://t.me/sup_love_game_bot?start=' + param, '_blank');
+}
+
+function burstHearts() {
+    const emojis = ['💖', '💘', '💕', '❤️', '💗'];
+    for (let i = 0; i < 18; i++) {
+        const s = document.createElement('span');
+        s.className = 'burst-heart';
+        s.textContent = emojis[i % emojis.length];
+        const ang = Math.random() * Math.PI * 2;
+        const dist = 90 + Math.random() * 140;
+        s.style.setProperty('--dx', Math.cos(ang) * dist + 'px');
+        s.style.setProperty('--dy', Math.sin(ang) * dist + 'px');
+        document.body.appendChild(s);
+        setTimeout(() => s.remove(), 1300);
+    }
 }
