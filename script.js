@@ -1,9 +1,5 @@
-// =====================================================
-//  ВСТАВЬ СВОЙ КЛЮЧ ВО 2-Ю СТРОКУ!
-// =====================================================
 const SUPABASE_URL = 'https://oreexiwvjhwssznwxndn.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9yZWV4aXd2amh3c3N6bnd4bmRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU4MzAzNTUsImV4cCI6MjEwMTQwNjM1NX0.Jq33H7nyHOTx00_xBYEOsS5u02C6_i_iDnQyGcbaTZM';
-// =====================================================
 
 let sb = null;
 try {
@@ -30,28 +26,11 @@ let currentGame = null;
 let currentOpponent = null;
 let pollTimer = null;
 
-// ===== ЖИВЫЕ ФРАЗЫ ВО ВРЕМЯ ОЖИДАНИЯ =====
 const waitPhrases = {
-    search: [
-        'Сканируем сердца поблизости 🔭',
-        'Ищем кого-то с добрым сердцем 💕',
-        'Сверяем ваши улыбки 📸',
-        'Уже близко... 💫'
-    ],
-    answer: [
-        'Соперник выбирает лучшие слова 😉',
-        'Шлифует ответ до блеска ✨',
-        'Советуется с сердцем 💓',
-        'Пишет, стирает и снова пишет 🙈'
-    ],
-    choice: [
-        'Соперник делает важный выбор 🤔',
-        'Решается судьба твоего сердечка ⚖️',
-        'Ещё чуть-чуть... 💫',
-        'Перечитывает твой ответ 👀'
-    ]
+    search: ['Сканируем сердца поблизости 🔭', 'Ищем кого-то с добрым сердцем 💕', 'Сверяем ваши улыбки 📸', 'Уже близко... 💫'],
+    answer: ['Соперник выбирает лучшие слова 😉', 'Шлифует ответ до блеска ✨', 'Советуется с сердцем 💓', 'Пишет, стирает и снова пишет 🙈'],
+    choice: ['Соперник делает важный выбор 🤔', 'Решается судьба твоего сердечка ⚖️', 'Ещё чуть-чуть... 💫', 'Перечитывает твой ответ 👀']
 };
-
 let waitTimer = null;
 let waitIndex = 0;
 
@@ -65,19 +44,14 @@ function startWaiting(mode) {
         el.textContent = waitPhrases[mode][waitIndex];
     }, 4000);
 }
+function stopWaiting() { if (waitTimer) { clearInterval(waitTimer); waitTimer = null; } }
 
-function stopWaiting() {
-    if (waitTimer) { clearInterval(waitTimer); waitTimer = null; }
-}
-
-// ===== ХРАНЕНИЕ НА УСТРОЙСТВЕ =====
 function saveProfile(data) { localStorage.setItem('sup_profile', JSON.stringify(data)); }
 function loadProfile() {
     const saved = localStorage.getItem('sup_profile');
     return saved ? JSON.parse(saved) : null;
 }
 
-// ===== ОБЛАКО =====
 async function saveProfileToCloud(data) {
     if (!sb) return;
     const idNum = Number(data.telegramId);
@@ -93,7 +67,7 @@ async function saveProfileToCloud(data) {
 async function openPlayers() {
     showScreen('players-screen');
     const list = document.getElementById('players-list');
-    if (!sb) { list.innerHTML = '<div class="loading">⚠️ База не подключена.<br>Проверь ключи в script.js</div>'; return; }
+    if (!sb) { list.innerHTML = '<div class="loading">⚠️ База не подключена</div>'; return; }
     list.innerHTML = '<div class="loading">Загружаем игроков...</div>';
     const { data, error } = await sb.from('profiles').select('*');
     if (error) { list.innerHTML = '<div class="loading">⚠️ ' + error.message + '</div>'; return; }
@@ -112,7 +86,6 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// ===== ЭКРАНЫ =====
 function showScreen(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
@@ -124,11 +97,8 @@ function setAvatar(elId, src) {
     else { el.style.backgroundImage = 'none'; el.textContent = '📷'; }
 }
 
-// ===== СТАРТ / РЕГИСТРАЦИЯ =====
 function startApp() {
-    if (!sb) {
-        alert('⚠️ База данных не подключена!\n\nОткрой script.js и вставь свои ключи Supabase в самые верхние строки.');
-    }
+    if (!sb) { alert('⚠️ База не подключена! Проверь ключ SUPABASE_KEY.'); }
     const saved = loadProfile();
     if (saved) { userData = Object.assign(userData, saved); showProfile(); }
     else { showScreen('registration-screen'); prefillFromTelegram(); }
@@ -187,10 +157,8 @@ function submitRegistration() {
     const age = document.getElementById('user-age').value.trim();
     const city = document.getElementById('user-city').value.trim();
     const username = document.getElementById('user-username').value.trim();
-
     if (!name || !age || !city || !userData.gender) { alert('Заполни все поля и выбери пол!'); return; }
     if (parseInt(age) < 16) { alert('Игра доступна с 16 лет!'); return; }
-
     userData.name = name; userData.age = age; userData.city = city; userData.username = username;
     saveProfile(userData);
     saveProfileToCloud(userData);
@@ -198,8 +166,7 @@ function submitRegistration() {
 }
 
 function showProfile() {
-    stopPolling();
-    stopWaiting();
+    stopPolling(); stopWaiting();
     setAvatar('profile-photo', userData.photo);
     const genderText = userData.gender === 'male' ? '👨 Парень' : '👩 Девушка';
     document.getElementById('profile-info').innerHTML =
@@ -218,26 +185,3 @@ function editProfile() {
     if (userData.gender) selectGender(userData.gender);
     showScreen('registration-screen');
 }
-
-// ===== ВОПРОС И ПОИСК =====
-function openQuestion() {
-    document.getElementById('question-input').value = userData.question || '';
-    showScreen('question-screen');
-}
-
-async function saveQuestionAndSearch() {
-    const q = document.getElementById('question-input').value.trim();
-    if (!q) { alert('Придумай вопрос!'); return; }
-    userData.question = q;
-    saveProfile(userData);
-    await saveProfileToCloud(userData);
-    startSearch();
-}
-
-function stopPolling() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } }
-
-async function startSearch() {
-    if (!sb) { alert('⚠️ База не подключена! Проверь ключи вверху script.js'); return; }
-    showScreen('search-screen');
-    startWaiting('search');
-    await sb.from('profiles').update({ status
