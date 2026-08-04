@@ -132,3 +132,31 @@ body {
 .btn-yes:active, .btn-no:active { transform: scale(0.9); }
 #result-body { text-align: center; color: #555; margin-bottom: 15px; }
 #result-body a { color: #ff4778; font-weight: bold; }
+/* ===== Полировка СУП 2.0 ===== */
+.screen { display: none; }
+.screen.active { display: block; animation: fadeInUp .45s ease; }
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+.hearts-bg { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.hearts-bg span {
+    position: absolute; bottom: -40px; font-size: 26px; opacity: .7;
+    animation: floatUp linear infinite;
+}
+.hearts-bg span:nth-child(1) { left: 8%; animation-duration: 7s; }
+.hearts-bg span:nth-child(2) { left: 28%; animation-duration: 9s; animation-delay: 1s; }
+.hearts-bg span:nth-child(3) { left: 48%; animation-duration: 6s; animation-delay: .5s; }
+.hearts-bg span:nth-child(4) { left: 68%; animation-duration: 8s; animation-delay: 2s; }
+.hearts-bg span:nth-child(5) { left: 86%; animation-duration: 10s; animation-delay: 1.5s; }
+@keyframes floatUp { to { transform: translateY(-110vh) rotate(20deg); opacity: 0; } }
+
+.btn-primary, .btn-secondary { transition: transform .15s, box-shadow .15s; }
+.btn-primary:active, .btn-secondary:active { transform: scale(.96); }
+
+.burst-heart {
+    position: fixed; top: 50%; left: 50%; font-size: 26px; pointer-events: none; z-index: 999;
+    animation: burst 1.2s ease-out forwards;
+}
+@keyframes burst {
+    from { transform: translate(0,0) scale(.6); opacity: 1; }
+    to { transform: translate(var(--dx), var(--dy)) scale(1.4); opacity: 0; }
+}
