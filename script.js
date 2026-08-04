@@ -1,5 +1,5 @@
 // =====================================================
-//  ШАГ 1: ВСТАВЬ СВОИ КЛЮЧИ СЮДА (обязательно!)
+//  ВСТАВЬ СВОЙ КЛЮЧ ВО 2-Ю СТРОКУ!
 // =====================================================
 const SUPABASE_URL = 'https://oreexiwvjhwssznwxndn.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9yZWV4aXd2amh3c3N6bnd4bmRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU4MzAzNTUsImV4cCI6MjEwMTQwNjM1NX0.Jq33H7nyHOTx00_xBYEOsS5u02C6_i_iDnQyGcbaTZM';
@@ -9,17 +9,17 @@ let sb = null;
 try {
     if (window.supabase && SUPABASE_URL.indexOf('https://') === 0 && SUPABASE_KEY.length > 30) {
         sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        console.log('✅ Supabase подключён');
-    } else {
-        console.log('⚠️ Ключи не вставлены или SDK не загрузился');
     }
-} catch (e) {
-    console.log('⚠️ Ошибка Supabase:', e);
-}
+} catch (e) { console.log('Supabase ошибка:', e); }
 
-const tg = window.Telegram.WebApp;
-tg.ready();
-tg.expand();
+const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : {
+    ready: function () {}, expand: function () {},
+    initDataUnsafe: {},
+    HapticFeedback: { impactOccurred: function () {}, notificationOccurred: function () {} },
+    MainButton: { setText: function () {}, show: function () {} },
+    sendData: function () {}
+};
+try { tg.ready(); tg.expand(); } catch (e) {}
 
 let userData = {
     name: '', age: '', city: '', gender: '', photo: '', username: '', question: '',
