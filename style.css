@@ -112,3 +112,23 @@ body {
 .player-name { font-weight: bold; color: #ff4778; }
 .player-meta { font-size: 13px; color: #888; }
 .loading { text-align: center; color: #888; padding: 20px; }
+/* Игра */
+.hint-text { text-align: center; color: #888; font-size: 14px; margin-bottom: 15px; }
+.textarea { min-height: 90px; resize: vertical; font-family: inherit; }
+.question-bubble {
+    background: #ffe0eb; border-radius: 15px; padding: 15px;
+    color: #d6336c; font-size: 16px; margin-bottom: 15px; text-align: center;
+}
+.search-heart { font-size: 80px; text-align: center; animation: pulse 1.2s infinite; }
+@keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.25); } }
+.choice-buttons { display: flex; gap: 15px; justify-content: center; margin-top: 10px; }
+.btn-yes, .btn-no {
+    font-size: 32px; border: none; border-radius: 50%;
+    width: 80px; height: 80px; cursor: pointer;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15); transition: transform 0.2s;
+}
+.btn-yes { background: #ffe0eb; }
+.btn-no { background: #eee; }
+.btn-yes:active, .btn-no:active { transform: scale(0.9); }
+#result-body { text-align: center; color: #555; margin-bottom: 15px; }
+#result-body a { color: #ff4778; font-weight: bold; }
