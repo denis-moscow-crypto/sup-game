@@ -19,6 +19,7 @@ try { tg.ready(); tg.expand(); } catch (e) {}
 
 let userData = {
     name: '', age: '', city: '', gender: '', photo: '', username: '', question: '', blind: false,
+    score: 0, wins: 0, games_played: 0,
     telegramId: (tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.id : 'unknown'
 };
 
@@ -180,12 +181,29 @@ function submitRegistration() {
 function showProfile() {
     stopPolling(); stopWaiting();
     setAvatar('profile-photo', userData.photo);
+    renderProfileInfo();
+    showScreen('profile-screen');
+    refreshMyStats();
+}
+
+function renderProfileInfo() {
     const genderText = userData.gender === 'male' ? '👨 Парень' : '👩 Девушка';
     document.getElementById('profile-info').innerHTML =
         '<div class="profile-name">' + escapeHtml(userData.name) + '</div>' +
         '<div class="profile-line">' + userData.age + ' лет · ' + escapeHtml(userData.city) + '</div>' +
-        '<div class="profile-line">' + genderText + '</div>';
-    showScreen('profile-screen');
+        '<div class="profile-line">' + genderText + '</div>' +
+        '<div class="profile-line">💎 ' + (userData.score || 0) + ' · ❤️ ' + (userData.wins || 0) + ' · 🎮 ' + (userData.games_played || 0) + '</div>';
+}
+
+async function refreshMyStats() {
+    if (!sb) return;
+    const { data } = await sb.from('profiles').select('score, wins, games_played').eq('id', Number(userData.telegramId)).single();
+    if (data) {
+        userData.score = data.score || 0;
+        userData.wins = data.wins || 0;
+        userData.games_played = data.games_played || 0;
+        renderProfileInfo();
+    }
 }
 
 function editProfile() {
