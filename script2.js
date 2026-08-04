@@ -31,11 +31,19 @@ async function searchTick() {
     const { data: games } = await sb.from('games').select('*')
         .or('player1.eq.' + myId + ',player2.eq.' + myId)
         .neq('status', 'done').limit(1);
-    if (games && games.length) {
-        stopPolling();
-        currentGame = games[0];
-        renderRound();
-        return;
+        if (games && games.length) {
+        const g = games[0];
+        const age = Date.now() - new Date(g.created_at).getTime();
+        if (age > 20 * 60 * 1000) {
+            // игра протухла (соперник пропал) — закрываем и ищем заново
+            await sb.from('games').update({ status: 'done' }).eq('id', g.id);
+            await sb.from('profiles').update({ status: 'idle' }).in('id', [g.player1, g.player2]);
+        } else {
+            stopPolling();
+            currentGame = g;
+            renderRound();
+            return;
+        }
     }
     const { data: candidates } = await sb.from('profiles').select('*')
         .eq('status', 'searching').neq('id', myId).neq('gender', userData.gender).limit(1);
@@ -54,7 +62,13 @@ async function searchTick() {
 
 async function cancelSearch() {
     stopPolling(); stopWaiting();
-    if (sb) await sb.from('profiles').update({ status: 'idle' }).eq('id', Number(userData.telegramId));
+    if (currentGame) {
+        await sb.from('games').update({ status: 'done' }).eq('id', currentGame.id);
+        await sb.from('profiles').update({ status: 'idle' }).in('id', [currentGame.player1, currentGame.player2]);
+        currentGame = null;
+    } else if (sb) {
+        await sb.from('profiles').update({ status: 'idle' }).eq('id', Number(userData.telegramId));
+    }
     showProfile();
 }
 
@@ -317,4 +331,15 @@ function burstHearts() {
         document.body.appendChild(s);
         setTimeout(() => s.remove(), 1300);
     }
+}
+
+async function leaveRound() {
+    if (!confirm('Соперник не в сети? Выйти из раунда?')) return;
+    if (currentGame) {
+        await sb.from('games').update({ status: 'done' }).eq('id', currentGame.id);
+        await sb.from('profiles').update({ status: 'idle' }).in('id', [currentGame.player1, currentGame.player2]);
+    }
+    currentGame = null;
+    stopPolling(); stopWaiting();
+    showProfile();
 }
