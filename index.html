@@ -152,6 +152,7 @@
                 <div id="round-question-text" class="question-bubble">...</div>
                 <textarea id="round-answer-input" class="input textarea" placeholder="Твой ответ..."></textarea>
                 <button class="btn-primary" onclick="submitAnswer()">Отправить ответ ✉️</button>
+                <button class="btn-secondary" onclick="leaveRound()">🚪 Соперник не в сети — выйти</button>
             </div>
         </div>
 
@@ -166,6 +167,7 @@
                 <div id="choose-answer" class="question-bubble">...</div>
                  <div id="superlike-banner" style="display:none;background:#fff3c0;color:#a07800;border-radius:15px;padding:10px;text-align:center;margin-bottom:10px;font-weight:bold;">⭐ Тебе отправили суперлайк!</div>
                 <div id="premium-hint" style="display:none;background:#e7d9ff;color:#6b3fa0;border-radius:15px;padding:10px;text-align:center;margin-bottom:10px;font-weight:bold;">💎 Premium: соперник уже выбрал тебя ❤️</div>
+               <button class="btn-secondary" onclick="leaveRound()">🚪 Соперник не в сети — выйти</button>
                 <div class="choice-buttons">
                     <button class="btn-no" onclick="submitChoice(false)">👎</button>
                     <button class="btn-yes" id="superlike-btn" style="display:none;background:#ffe9a8;" onclick="submitSuperlike()">⭐</button>
@@ -183,7 +185,7 @@
             </div>
         </div>
     </div>
-    <script src="script.js?v=17"></script>
-    <script src="script2.js?v=17"></script>
+    <script src="script.js?v=18"></script>
+    <script src="script2.js?v=18"></script>
 </body>
 </html>
