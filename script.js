@@ -52,6 +52,16 @@ function loadProfile() {
     return saved ? JSON.parse(saved) : null;
 }
 
+function startHeartbeat() {
+    if (window.__hb) return;
+    const beat = async () => {
+        if (!sb || !userData.telegramId || userData.telegramId === 'unknown') return;
+        await sb.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', Number(userData.telegramId));
+    };
+    beat();
+    window.__hb = setInterval(beat, 30000);
+}
+
 async function saveProfileToCloud(data) {
     if (!sb) return;
     const idNum = Number(data.telegramId);
