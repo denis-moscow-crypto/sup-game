@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>СУП 2.0</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Telegram Web App SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div class="app">
+        <!-- Экран приветствия -->
+        <div id="welcome-screen" class="screen active">
+            <div class="hearts-bg">
+                <span>💕</span>
+                <span>💘</span>
+                <span>💖</span>
+                <span>💗</span>
+                <span>💓</span>
+            </div>
+            <div class="welcome-content">
+                <h1 class="logo">СУП</h1>
+                <p class="tagline">Спросил · Увидел · Полюбил</p>
+                <p class="subtitle">Новая версия легендарной игры теперь в Telegram!</p>
+                <button class="btn-primary" onclick="startRegistration()">
+                    Начать знакомство 💕
+                </button>
+            </div>
+        </div>
+
+        <!-- Экран регистрации -->
+        <div id="registration-screen" class="screen">
+            <div class="form-container">
+                <h2>Давай познакомимся!</h2>
+                <div class="avatar-upload" onclick="uploadPhoto()">
+                    <img id="avatar-preview" src="https://via.placeholder.com/150" alt="Аватар">
+                    <div class="upload-hint">📷 Загрузить фото</div>
+                </div>
+                <input type="text" id="user-name" class="input" placeholder="Как тебя зовут?">
+                <input type="number" id="user-age" class="input" placeholder="Возраст" min="16" max="99">
+                <input type="text" id="user-city" class="input" placeholder="Город">
+                <div class="gender-select">
+                    <button class="gender-btn" data-gender="male" onclick="selectGender('male')">👨 Парень</button>
+                    <button class="gender-btn" data-gender="female" onclick="selectGender('female')">👩 Девушка</button>
+                </div>
+                <button class="btn-primary" onclick="submitRegistration()">
+                    Создать профиль 🚀
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
