@@ -251,3 +251,11 @@ async function openAchievements() {
             '<div class="player-meta">' + b.desc + (has ? ' · ПОЛУЧЕНО!' : '') + '</div></div></div>';
     }).join('');
 }
+
+function openShop() {
+    showScreen('shop-screen');
+}
+
+function openBuy(param) {
+    window.open('https://t.me/sup_love_game_bot?start=' + param, '_blank');
+}
