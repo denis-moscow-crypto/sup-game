@@ -1,7 +1,12 @@
 function openQuestion() {
     document.getElementById('question-input').value = userData.question || '';
-    document.getElementById('blind-checkbox').checked = !!userData.blind;
-    showScreen('question-screen');
+                document.getElementById('choose-answer').textContent = oppAnswer || '...';
+            const oppSl = role === 'p1' ? g.sl2 : g.sl1;
+            document.getElementById('superlike-banner').style.display = oppSl ? 'block' : 'none';
+            const oppC = role === 'p1' ? g.c2 : g.c1;
+            document.getElementById('premium-hint').style.display = (userData.premium && oppC === true) ? 'block' : 'none';
+            document.getElementById('superlike-btn').style.display = (userData.superlikes || 0) > 0 ? 'inline-block' : 'none';
+            showScreen('round-choose-screen');
 }
 
 async function saveQuestionAndSearch() {
@@ -258,4 +263,35 @@ function openShop() {
 
 function openBuy(param) {
     window.open('https://t.me/sup_love_game_bot?start=' + param, '_blank');
+}
+
+async function submitSuperlike() {
+    if ((userData.superlikes || 0) <= 0) { alert('Нет суперлайков! Купи в магазине 💎'); return; }
+    await sb.from('profiles').update({ superlikes: (userData.superlikes || 0) - 1 }).eq('id', Number(userData.telegramId));
+    userData.superlikes = (userData.superlikes || 0) - 1;
+    const role = myRole(currentGame);
+    const upd = {};
+    upd[role === 'p1' ? 'sl1' : 'sl2'] = true;
+    upd[role === 'p1' ? 'c1' : 'c2'] = true;
+    await sb.from('games').update(upd).eq('id', currentGame.id);
+    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+    const { data } = await sb.from('games').select('*').eq('id', currentGame.id).single();
+    currentGame = data;
+    if (data.c1 !== null && data.c2 !== null && data.status !== 'done') {
+        await sb.from('games').update({ status: 'done' }).eq('id', data.id);
+        await sb.from('profiles').update({ status: 'idle' }).in('id', [data.player1, data.player2]);
+        const match = data.c1 && data.c2;
+        for (const pid of [data.player1, data.player2]) {
+            const { data: prof } = await sb.from('profiles').select('score, wins, games_played').eq('id', pid).single();
+            if (prof) {
+                await sb.from('profiles').update({
+                    games_played: (prof.games_played || 0) + 1,
+                    wins: (prof.wins || 0) + (match ? 1 : 0),
+                    score: (prof.score || 0) + (match ? 10 : 2)
+                }).eq('id', pid);
+            }
+        }
+        currentGame.status = 'done';
+    }
+    renderRound();
 }
