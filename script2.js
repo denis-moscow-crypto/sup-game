@@ -282,7 +282,7 @@ const BADGES = [
     { id: 'love1', emoji: '💘', name: 'Сердцеед', desc: 'Первая взаимная симпатия', test: s => (s.wins || 0) >= 1 },
     { id: 'love3', emoji: '🔥', name: 'Казанова', desc: '3 взаимные симпатии', test: s => (s.wins || 0) >= 3 },
     { id: 'love10', emoji: '👑', name: 'Легенда СУП', desc: '10 взаимных симпатий', test: s => (s.wins || 0) >= 10 },
-    { id: 'games10', emoji: '🎮', name: 'Завсегдатай', desc: 'Сыграть 10 игр', test: s => (s.games_played || 0) >= 10 },
+    { id: 'games10', emoji: '🎮', name: 'Игроман', desc: 'Сыграть 10 игр', test: s => (s.games_played || 0) >= 10 },
     { id: 'score100', emoji: '💎', name: 'Богач', desc: 'Набрать 100 очков', test: s => (s.score || 0) >= 100 },
     { id: 'ref3', emoji: '💌', name: 'Посол любви', desc: 'Пригласить 3 друзей', test: s => (s.invites || 0) >= 3 }
 ];
