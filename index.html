@@ -81,6 +81,10 @@
                 <h2>Твой вопрос 💬</h2>
                 <p class="hint-text">Придумай вопрос, на который ответит твой будущий соперник:</p>
                 <textarea id="question-input" class="input textarea" placeholder="Например: Как ты проводишь выходные?"></textarea>
+                <label style="display:flex;align-items:center;gap:10px;background:#ffe0eb;border-radius:15px;padding:12px;margin-bottom:15px;color:#d6336c;font-size:14px;cursor:pointer;">
+                    <input type="checkbox" id="blind-checkbox" style="width:20px;height:20px;flex-shrink:0;">
+                    🕶️ Слепое свидание — фото раскроется только при взаимной симпатии
+                </label>
                 <button class="btn-primary" onclick="saveQuestionAndSearch()">Сохранить и искать пару 🔍</button>
                 <button class="btn-secondary" onclick="showProfile()">← Назад</button>
             </div>
@@ -130,6 +134,6 @@
             </div>
         </div>
     </div>
-    <script src="script.js?v=5"></script>
+    <script src="script.js?v=6"></script>
 </body>
 </html>
