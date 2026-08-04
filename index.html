@@ -1,60 +1,14 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>СУП 2.0</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-</head>
-<body>
-    <div class="app">
-        <!-- Экран приветствия -->
-        <div id="welcome-screen" class="screen active">
-            <div class="hearts-bg">
-                <span>💕</span><span>💘</span><span>💖</span><span>💗</span><span>💓</span>
-            </div>
-            <div class="welcome-content">
-                <h1 class="logo">СУП</h1>
-                <p class="tagline">Спросил · Увидел · Полюбил</p>
-                <p class="subtitle">Новая версия легендарной игры теперь в Telegram!</p>
-                <button class="btn-primary" onclick="startApp()">Начать 💕</button>
-            </div>
-        </div>
-
-        <!-- Экран регистрации -->
-        <div id="registration-screen" class="screen">
-            <div class="form-container">
-                <h2>Давай познакомимся!</h2>
-                <div class="avatar-upload" onclick="uploadPhoto()">
-                    <div class="avatar-circle" id="avatar-preview">📷</div>
-                    <div class="upload-hint">Загрузить фото</div>
-                </div>
-                <input type="file" id="photo-input" accept="image/*" style="display:none">
-                <input type="text" id="user-name" class="input" placeholder="Как тебя зовут?">
-                <input type="number" id="user-age" class="input" placeholder="Возраст" min="16" max="99">
-                <input type="text" id="user-city" class="input" placeholder="Город">
-                <div class="gender-select">
-                    <button class="gender-btn" data-gender="male" onclick="selectGender('male')">👨 Парень</button>
-                    <button class="gender-btn" data-gender="female" onclick="selectGender('female')">👩 Девушка</button>
-                </div>
-                <button class="btn-primary" onclick="submitRegistration()">Создать профиль 🚀</button>
-            </div>
-        </div>
-
-        <!-- Экран профиля -->
-        <div id="profile-screen" class="screen">
-            <div class="form-container">
-                <h2>Твой профиль 💖</h2>
-                <div class="profile-card">
-                    <div class="avatar-circle big" id="profile-photo">📷</div>
-                    <div id="profile-info" class="profile-info"></div>
-                </div>
-                <button class="btn-secondary" onclick="editProfile()">Изменить ✏️</button>
-                <button class="btn-primary" onclick="nextStep()">Дальше: вопрос 💬</button>
-            </div>
-        </div>
-    </div>
-    <script src="script.js"></script>
-</body>
-</html>
+/* Список игроков */
+.players-list { max-height: 55vh; overflow-y: auto; margin-bottom: 15px; }
+.player-card {
+    display: flex; align-items: center; gap: 12px;
+    background: #fff0f5; border-radius: 15px; padding: 10px; margin-bottom: 10px;
+}
+.player-photo {
+    width: 60px; height: 60px; border-radius: 50%;
+    background-color: #ffd0e0; background-size: cover; background-position: center;
+    display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0;
+}
+.player-name { font-weight: bold; color: #ff4778; }
+.player-meta { font-size: 13px; color: #888; }
+.loading { text-align: center; color: #888; padding: 20px; }
