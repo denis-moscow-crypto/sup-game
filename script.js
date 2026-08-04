@@ -79,10 +79,11 @@ async function openPlayers() {
     const list = document.getElementById('players-list');
     if (!sb) { list.innerHTML = '<div class="loading">⚠️ База не подключена</div>'; return; }
     list.innerHTML = '<div class="loading">Загружаем игроков...</div>';
-    const { data, error } = await sb.from('profiles').select('*');
+    const cutoff = new Date(Date.now() - 90000).toISOString();
+    const { data, error } = await sb.from('profiles').select('*').gt('last_seen', cutoff);
     if (error) { list.innerHTML = '<div class="loading">⚠️ ' + error.message + '</div>'; return; }
     const others = (data || []).filter(p => String(p.id) !== String(userData.telegramId));
-    if (!others.length) { list.innerHTML = '<div class="loading">Пока нет других игроков 😢</div>'; return; }
+    if (!others.length) { list.innerHTML = '<div class="loading">Сейчас никого нет онлайн 😢<br>Позови друзей!</div>'; return; }
     list.innerHTML = others.map(p =>
         '<div class="player-card"><div class="player-photo" style="background-image:url(' + (p.photo || '') + ')">' + (p.photo ? '' : '💕') + '</div>' +
         '<div class="player-info"><div class="player-name">' + escapeHtml(p.name) + '</div>' +
@@ -110,7 +111,7 @@ function setAvatar(elId, src) {
 function startApp() {
     if (!sb) { alert('⚠️ База не подключена! Проверь ключ SUPABASE_KEY.'); }
     const saved = loadProfile();
-    if (saved) { userData = Object.assign(userData, saved); showProfile(); }
+    if (saved) { userData = Object.assign(userData, saved); startHeartbeat(); showProfile(); }
     else { showScreen('registration-screen'); prefillFromTelegram(); }
 }
 
@@ -172,6 +173,7 @@ function submitRegistration() {
     userData.name = name; userData.age = age; userData.city = city; userData.username = username;
     saveProfile(userData);
     saveProfileToCloud(userData);
+    startHeartbeat();
     showProfile();
 }
 
