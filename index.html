@@ -65,6 +65,7 @@
                 <button class="btn-primary" onclick="openQuestion()">Играть 💘</button>
                 <button class="btn-secondary" onclick="openRating()">Рейтинг 👑</button>
                 <button class="btn-secondary" onclick="openAchievements()">Достижения 🏅</button>
+                <button class="btn-secondary" onclick="openShop()">Магазин 💎</button>
                 <button class="btn-secondary" onclick="openPlayers()">Игроки в игре 👥</button>
                 <button class="btn-secondary" onclick="editProfile()">Изменить ✏️</button>
             </div>
@@ -78,6 +79,21 @@
             </div>
         </div>
 
+        <div id="shop-screen" class="screen">
+        <div class="form-container">
+        <h2>Магазин 💎</h2>
+        <div class="player-card"><div class="player-photo" style="background:#ffe0eb;">⭐</div>
+            <div class="player-info"><div class="player-name">Суперлайк</div>
+            <div class="player-meta">Соперник сразу увидит твою симпатию</div></div></div>
+        <button class="btn-primary" onclick="openBuy('buy_superlike')">Купить — 5 ⭐</button>
+        <div class="player-card" style="margin-top:15px;"><div class="player-photo" style="background:#ffe0eb;">💎</div>
+            <div class="player-info"><div class="player-name">Premium на месяц</div>
+            <div class="player-meta">Значок 💎 и функция «кто меня выбрал»</div></div></div>
+            <button class="btn-primary" onclick="openBuy('buy_premium')">Купить — 150 ⭐</button>
+        <button class="btn-secondary" onclick="showProfile()">← Назад</button>
+    </div>
+</div>
+
         <div id="rating-screen" class="screen">
             <div class="form-container">
                 <h2>Топ сердечек 👑</h2>
@@ -85,7 +101,7 @@
                 <button class="btn-secondary" onclick="showProfile()">← Назад</button>
             </div>
         </div>
-
+        
         <div id="achievements-screen" class="screen">
             <div class="form-container">
                 <h2>Твои достижения 🏅</h2>
@@ -152,7 +168,7 @@
             </div>
         </div>
     </div>
-    <script src="script.js?v=11"></script>
-    <script src="script2.js?v=11"></script>
+    <script src="script.js?v=12"></script>
+    <script src="script2.js?v=12"></script>
 </body>
 </html>
