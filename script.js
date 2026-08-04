@@ -5,6 +5,242 @@ const SUPABASE_URL = 'https://oreexiwvjhwssznwxndn.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9yZWV4aXd2amh3c3N6bnd4bmRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU4MzAzNTUsImV4cCI6MjEwMTQwNjM1NX0.Jq33H7nyHOTx00_xBYEOsS5u02C6_i_iDnQyGcbaTZM';
 // =====================================================
 
+let sb = null;
+try {
+    if (window.supabase && SUPABASE_URL.indexOf('https://') === 0 && SUPABASE_KEY.length > 30) {
+        sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        console.log('✅ Supabase подключён');
+    } else {
+        console.log('⚠️ Ключи не вставлены или SDK не загрузился');
+    }
+} catch (e) {
+    console.log('⚠️ Ошибка Supabase:', e);
+}
+
+const tg = window.Telegram.WebApp;
+tg.ready();
+tg.expand();
+
+let userData = {
+    name: '', age: '', city: '', gender: '', photo: '', username: '', question: '',
+    telegramId: (tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.id : 'unknown'
+};
+
+let currentGame = null;
+let currentOpponent = null;
+let pollTimer = null;
+
+// ===== ЖИВЫЕ ФРАЗЫ ВО ВРЕМЯ ОЖИДАНИЯ =====
+const waitPhrases = {
+    search: [
+        'Сканируем сердца поблизости 🔭',
+        'Ищем кого-то с добрым сердцем 💕',
+        'Сверяем ваши улыбки 📸',
+        'Уже близко... 💫'
+    ],
+    answer: [
+        'Соперник выбирает лучшие слова 😉',
+        'Шлифует ответ до блеска ✨',
+        'Советуется с сердцем 💓',
+        'Пишет, стирает и снова пишет 🙈'
+    ],
+    choice: [
+        'Соперник делает важный выбор 🤔',
+        'Решается судьба твоего сердечка ⚖️',
+        'Ещё чуть-чуть... 💫',
+        'Перечитывает твой ответ 👀'
+    ]
+};
+
+let waitTimer = null;
+let waitIndex = 0;
+
+function startWaiting(mode) {
+    stopWaiting();
+    waitIndex = 0;
+    const el = document.getElementById('search-status');
+    el.textContent = waitPhrases[mode][0];
+    waitTimer = setInterval(() => {
+        waitIndex = (waitIndex + 1) % waitPhrases[mode].length;
+        el.textContent = waitPhrases[mode][waitIndex];
+    }, 4000);
+}
+
+function stopWaiting() {
+    if (waitTimer) { clearInterval(waitTimer); waitTimer = null; }
+}
+
+// ===== ХРАНЕНИЕ НА УСТРОЙСТВЕ =====
+function saveProfile(data) { localStorage.setItem('sup_profile', JSON.stringify(data)); }
+function loadProfile() {
+    const saved = localStorage.getItem('sup_profile');
+    return saved ? JSON.parse(saved) : null;
+}
+
+// ===== ОБЛАКО =====
+async function saveProfileToCloud(data) {
+    if (!sb) return;
+    const idNum = Number(data.telegramId);
+    if (!idNum) return;
+    const { error } = await sb.from('profiles').upsert({
+        id: idNum, name: data.name, age: parseInt(data.age), city: data.city,
+        gender: data.gender, photo: data.photo || null, username: data.username || null,
+        question: data.question || null
+    });
+    if (error) console.log('Ошибка сохранения:', error.message);
+}
+
+async function openPlayers() {
+    showScreen('players-screen');
+    const list = document.getElementById('players-list');
+    if (!sb) { list.innerHTML = '<div class="loading">⚠️ База не подключена.<br>Проверь ключи в script.js</div>'; return; }
+    list.innerHTML = '<div class="loading">Загружаем игроков...</div>';
+    const { data, error } = await sb.from('profiles').select('*');
+    if (error) { list.innerHTML = '<div class="loading">⚠️ ' + error.message + '</div>'; return; }
+    const others = (data || []).filter(p => String(p.id) !== String(userData.telegramId));
+    if (!others.length) { list.innerHTML = '<div class="loading">Пока нет других игроков 😢</div>'; return; }
+    list.innerHTML = others.map(p =>
+        '<div class="player-card"><div class="player-photo" style="background-image:url(' + (p.photo || '') + ')">' + (p.photo ? '' : '💕') + '</div>' +
+        '<div class="player-info"><div class="player-name">' + escapeHtml(p.name) + '</div>' +
+        '<div class="player-meta">' + p.age + ' лет · ' + escapeHtml(p.city) + '</div></div></div>'
+    ).join('');
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text || '';
+    return div.innerHTML;
+}
+
+// ===== ЭКРАНЫ =====
+function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+}
+
+function setAvatar(elId, src) {
+    const el = document.getElementById(elId);
+    if (src) { el.style.backgroundImage = 'url(' + src + ')'; el.textContent = ''; }
+    else { el.style.backgroundImage = 'none'; el.textContent = '📷'; }
+}
+
+// ===== СТАРТ / РЕГИСТРАЦИЯ =====
+function startApp() {
+    if (!sb) {
+        alert('⚠️ База данных не подключена!\n\nОткрой script.js и вставь свои ключи Supabase в самые верхние строки.');
+    }
+    const saved = loadProfile();
+    if (saved) { userData = Object.assign(userData, saved); showProfile(); }
+    else { showScreen('registration-screen'); prefillFromTelegram(); }
+}
+
+function prefillFromTelegram() {
+    const tgUser = tg.initDataUnsafe && tg.initDataUnsafe.user;
+    if (tgUser && tgUser.first_name) {
+        document.getElementById('user-name').value = tgUser.first_name + ' ' + (tgUser.last_name || '');
+    }
+    if (tgUser && tgUser.username) {
+        document.getElementById('user-username').value = '@' + tgUser.username;
+    }
+}
+
+function selectGender(gender) {
+    userData.gender = gender;
+    document.querySelectorAll('.gender-btn').forEach(btn => {
+        btn.classList.toggle('selected', btn.dataset.gender === gender);
+    });
+    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+}
+
+function compressImage(file, callback) {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const scale = Math.min(1, 300 / Math.max(img.width, img.height));
+            canvas.width = Math.round(img.width * scale);
+            canvas.height = Math.round(img.height * scale);
+            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+            callback(canvas.toDataURL('image/jpeg', 0.7));
+        };
+        img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+function uploadPhoto() {
+    const input = document.getElementById('photo-input');
+    input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        compressImage(file, (compressed) => {
+            userData.photo = compressed;
+            setAvatar('avatar-preview', compressed);
+        });
+    };
+    input.click();
+}
+
+function submitRegistration() {
+    const name = document.getElementById('user-name').value.trim();
+    const age = document.getElementById('user-age').value.trim();
+    const city = document.getElementById('user-city').value.trim();
+    const username = document.getElementById('user-username').value.trim();
+
+    if (!name || !age || !city || !userData.gender) { alert('Заполни все поля и выбери пол!'); return; }
+    if (parseInt(age) < 16) { alert('Игра доступна с 16 лет!'); return; }
+
+    userData.name = name; userData.age = age; userData.city = city; userData.username = username;
+    saveProfile(userData);
+    saveProfileToCloud(userData);
+    showProfile();
+}
+
+function showProfile() {
+    stopPolling();
+    stopWaiting();
+    setAvatar('profile-photo', userData.photo);
+    const genderText = userData.gender === 'male' ? '👨 Парень' : '👩 Девушка';
+    document.getElementById('profile-info').innerHTML =
+        '<div class="profile-name">' + escapeHtml(userData.name) + '</div>' +
+        '<div class="profile-line">' + userData.age + ' лет · ' + escapeHtml(userData.city) + '</div>' +
+        '<div class="profile-line">' + genderText + '</div>';
+    showScreen('profile-screen');
+}
+
+function editProfile() {
+    document.getElementById('user-name').value = userData.name;
+    document.getElementById('user-age').value = userData.age;
+    document.getElementById('user-city').value = userData.city;
+    document.getElementById('user-username').value = userData.username || '';
+    setAvatar('avatar-preview', userData.photo);
+    if (userData.gender) selectGender(userData.gender);
+    showScreen('registration-screen');
+}
+
+// ===== ВОПРОС И ПОИСК =====
+function openQuestion() {
+    document.getElementById('question-input').value = userData.question || '';
+    showScreen('question-screen');
+}
+
+async function saveQuestionAndSearch() {
+    const q = document.getElementById('question-input').value.trim();
+    if (!q) { alert('Придумай вопрос!'); return; }
+    userData.question = q;
+    saveProfile(userData);
+    await saveProfileToCloud(userData);
+    startSearch();
+}
+
+function stopPolling() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } }
+
+async function startSearch() {
+    if (!sb) { alert('⚠️ База не подключена! Проверь ключи вверху script.js'); return; }
+    showScreen('search-screen');
+    startWaiting('search');
+    await sb.from('profiles').update({ status
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const tg = window.Telegram.WebApp;
