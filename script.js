@@ -108,7 +108,11 @@ function setAvatar(elId, src) {
     if (src) { el.style.backgroundImage = 'url(' + src + ')'; el.textContent = ''; }
     else { el.style.backgroundImage = 'none'; el.textContent = '📷'; }
 }
-
+function applyTheme() {
+    document.body.classList.remove('theme-male', 'theme-female');
+    if (userData.gender === 'male') document.body.classList.add('theme-male');
+    if (userData.gender === 'female') document.body.classList.add('theme-female');
+}
 function startApp() {
     if (!sb) { alert('⚠️ База не подключена! Проверь ключ SUPABASE_KEY.'); }
     const saved = loadProfile();
@@ -128,6 +132,7 @@ function prefillFromTelegram() {
 
 function selectGender(gender) {
     userData.gender = gender;
+    applyTheme();
     document.querySelectorAll('.gender-btn').forEach(btn => {
         btn.classList.toggle('selected', btn.dataset.gender === gender);
     });
@@ -181,6 +186,7 @@ function submitRegistration() {
 
 function showProfile() {
     stopPolling(); stopWaiting();
+    applyTheme();
     setAvatar('profile-photo', userData.photo);
     renderProfileInfo();
     showScreen('profile-screen');
