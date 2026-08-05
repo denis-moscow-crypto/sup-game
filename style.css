@@ -160,3 +160,17 @@ body {
     from { transform: translate(0,0) scale(.6); opacity: 1; }
     to { transform: translate(var(--dx), var(--dy)) scale(1.4); opacity: 0; }
 }
+/* ===== Темы по полу ===== */
+#welcome-screen { background: linear-gradient(105deg, #ffd0e0 50%, #c9dcff 50%); }
+#registration-screen { background: linear-gradient(105deg, #ffd0e0 50%, #c9dcff 50%); }
+
+body.theme-female, body.theme-female .app { background: linear-gradient(160deg, #ffe0eb, #ffd0e0) !important; }
+body.theme-male, body.theme-male .app { background: linear-gradient(160deg, #e3eeff, #c9dcff) !important; }
+
+body.theme-female #registration-screen { background: linear-gradient(160deg, #ffe0eb, #ffd0e0); }
+body.theme-male #registration-screen { background: linear-gradient(160deg, #e3eeff, #c9dcff); }
+
+body.theme-male .btn-primary { background: linear-gradient(90deg, #4d8dff, #6aa5ff) !important; }
+body.theme-male .question-bubble { background: #dbe9ff !important; color: #2b62d9 !important; }
+body.theme-male .logo { color: #4d8dff !important; }
+body.theme-male .search-heart { filter: hue-rotate(190deg); }
