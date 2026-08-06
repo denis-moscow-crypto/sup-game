@@ -136,10 +136,14 @@
             </div>
         </div>
 
-        <div id="search-screen" class="screen">
+                <div id="search-screen" class="screen">
             <div class="form-container">
-                <div class="search-heart">💘</div>
-                <h2>Ищем тебе пару...</h2>
+                <div class="search-heart-wrap"><div class="search-heart" id="search-heart">💘</div></div>
+                <h2 id="search-title">Ищем тебе пару...</h2>
+                <p id="search-status" class="hint-text">Сканируем сердца поблизости 🔭</p>
+                <button class="btn-secondary" onclick="cancelSearch()">Отменить ✋</button>
+            </div>
+        </div>
                 <p id="search-status" class="hint-text">Сканируем сердца поблизости 🔭</p>
                 <button class="btn-secondary" onclick="cancelSearch()">Отменить ✋</button>
             </div>
@@ -185,7 +189,7 @@
             </div>
         </div>
     </div>
-    <script src="script.js?v=19"></script>
-    <script src="script2.js?v=19"></script>
+    <script src="script.js?v=20"></script>
+    <script src="script2.js?v=20"></script>
 </body>
 </html>
