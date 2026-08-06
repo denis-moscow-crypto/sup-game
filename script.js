@@ -1,5 +1,5 @@
 const SUPABASE_URL = 'https://oreexiwvjhwssznwxndn.supabase.co';
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9yZWV4aXd2amh3c3N6bnd4bmRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU4MzAzNTUsImV4cCI6MjEwMTQwNjM1NX0.Jq33H7nyHOTx00_xBYEOsS5u02C6_i_iDnQyGcbaTZM"
+const SUPABASE_KEY = 'ВСТАВЬ_СВОЙ_КЛЮЧ_eyJ';
 
 let sb = null;
 try {
@@ -18,7 +18,7 @@ const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp 
 try { tg.ready(); tg.expand(); } catch (e) {}
 
 let userData = {
-    name: '', age: '', city: '', gender: '', photo: '', username: '', question: '', blind: false,
+    name: '', age: '', city: '', gender: '', photo: '', username: '', question: '', blind: false, zodiac: '',
     score: 0, wins: 0, games_played: 0, superlikes: 0, premium: false, invites: 0,
     telegramId: (tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.id : 'unknown'
 };
@@ -26,6 +26,32 @@ let userData = {
 let currentGame = null;
 let currentOpponent = null;
 let pollTimer = null;
+
+const ZODIAC = {
+    aries: '♈', taurus: '♉', gemini: '♊', cancer: '♋', leo: '♌', virgo: '♍',
+    libra: '♎', scorpio: '♏', sagittarius: '♐', capricorn: '♑', aquarius: '♒', pisces: '♓'
+};
+const ELEMENTS = {
+    aries: 'fire', leo: 'fire', sagittarius: 'fire',
+    taurus: 'earth', virgo: 'earth', capricorn: 'earth',
+    gemini: 'air', libra: 'air', aquarius: 'air',
+    cancer: 'water', scorpio: 'water', pisces: 'water'
+};
+function zodiacCompat(z1, z2) {
+    if (!z1 || !z2 || !ZODIAC[z1] || !ZODIAC[z2]) return null;
+    const key = [z1, z2].sort().join('-');
+    let hash = 0;
+    for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) % 1000;
+    const percent = 55 + (hash % 45);
+    const e1 = ELEMENTS[z1], e2 = ELEMENTS[z2];
+    let phrase = 'Интересное сочетание! ✨';
+    if (e1 === e2) phrase = 'Вы из одной стихии — полное взаимопонимание! 🔥';
+    else if ((e1 === 'fire' && e2 === 'air') || (e1 === 'air' && e2 === 'fire')) phrase = 'Огонь и воздух — искры летят! 🔥';
+    else if ((e1 === 'water' && e2 === 'earth') || (e1 === 'earth' && e2 === 'water')) phrase = 'Вода и земля — гармония и уют 🌿';
+    else if ((e1 === 'fire' && e2 === 'water') || (e1 === 'water' && e2 === 'fire')) phrase = 'Огонь и вода — буря эмоций! 🌪️';
+    else phrase = 'Противоположности притягиваются! 🧲';
+    return { percent: percent, phrase: phrase };
+}
 
 const waitPhrases = {
     search: ['Сканируем сердца поблизости 🔭', 'Ищем кого-то с добрым сердцем 💕', 'Сверяем ваши улыбки 📸', 'Уже близко... 💫'],
@@ -82,7 +108,7 @@ async function saveProfileToCloud(data) {
     const { error } = await sb.from('profiles').upsert({
         id: idNum, name: data.name, age: parseInt(data.age), city: data.city,
         gender: data.gender, photo: data.photo || null, username: data.username || null,
-        question: data.question || null, blind: !!data.blind
+        question: data.question || null, blind: !!data.blind, zodiac: data.zodiac || null
     });
     if (error) console.log('Ошибка сохранения:', error.message);
 }
@@ -99,7 +125,7 @@ async function openPlayers() {
     if (!others.length) { list.innerHTML = '<div class="loading">Сейчас никого нет онлайн 😢<br>Позови друзей!</div>'; return; }
     list.innerHTML = others.map(p =>
         '<div class="player-card"><div class="player-photo" style="background-image:url(' + (p.photo || '') + ')">' + (p.photo ? '' : '💕') + '</div>' +
-        '<div class="player-info"><div class="player-name">' + escapeHtml(p.name) + (p.premium ? ' 💎' : '') + '</div>' +
+        '<div class="player-info"><div class="player-name">' + escapeHtml(p.name) + (p.premium ? ' 💎' : '') + (ZODIAC[p.zodiac] ? ' ' + ZODIAC[p.zodiac] : '') + '</div>' +
         '<div class="player-meta">' + p.age + ' лет · ' + escapeHtml(p.city) + '</div></div></div>'
     ).join('');
 }
@@ -196,10 +222,12 @@ function submitRegistration() {
     const age = document.getElementById('user-age').value.trim();
     const city = document.getElementById('user-city').value.trim();
     const username = document.getElementById('user-username').value.trim();
+    const zodiac = document.getElementById('user-zodiac').value;
+    if (!zodiac) { alert('Выбери свой знак зодиака ✨'); return; }
     if (!document.getElementById('agree-checkbox').checked) { alert('Подтверди, что тебе есть 16 лет и ты принимаешь правила!'); return; }
     if (!name || !age || !city || !userData.gender) { alert('Заполни все поля и выбери пол!'); return; }
     if (parseInt(age) < 16) { alert('Игра доступна с 16 лет!'); return; }
-    userData.name = name; userData.age = age; userData.city = city; userData.username = username;
+    userData.name = name; userData.age = age; userData.city = city; userData.username = username; userData.zodiac = zodiac;
     saveProfile(userData);
     saveProfileToCloud(userData);
     startHeartbeat();
@@ -219,7 +247,7 @@ function renderProfileInfo() {
     const genderText = userData.gender === 'male' ? '👨 Парень' : '👩 Девушка';
     document.getElementById('profile-info').innerHTML =
         '<div class="profile-name">' + escapeHtml(userData.name) + (userData.premium ? ' 💎' : '') + '</div>' +
-        '<div class="profile-line">' + userData.age + ' лет · ' + escapeHtml(userData.city) + '</div>' +
+        '<div class="profile-line">' + userData.age + ' лет · ' + escapeHtml(userData.city) + (userData.zodiac ? ' · ' + ZODIAC[userData.zodiac] : '') + '</div>' +
         '<div class="profile-line">' + genderText + '</div>' +
         '<div class="profile-line">💎 ' + (userData.score || 0) + ' · ❤️ ' + (userData.wins || 0) + ' · 🎮 ' + (userData.games_played || 0) + ' · ⭐ ' + (userData.superlikes || 0) + ' · 💌 ' + (userData.invites || 0) + '</div>';
 }
@@ -243,6 +271,7 @@ function editProfile() {
     document.getElementById('user-age').value = userData.age;
     document.getElementById('user-city').value = userData.city;
     document.getElementById('user-username').value = userData.username || '';
+    document.getElementById('user-zodiac').value = userData.zodiac || '';
     setAvatar('avatar-preview', userData.photo);
     if (userData.gender) selectGender(userData.gender);
     showScreen('registration-screen');
