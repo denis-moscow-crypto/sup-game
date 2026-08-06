@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>СУП 2.0</title>
-    <link rel="stylesheet" href="style.css?v=24">
+    <link rel="stylesheet" href="style.css?v=25">
     <script>
         window.onerror = function (msg, src, line) {
             window.__err = (window.__err || '') + msg + ' (строка ' + line + ')\n';
@@ -156,6 +156,8 @@
                 <h2>Твой вопрос 💬</h2>
                 <p class="hint-text">Придумай вопрос, на который ответит твой будущий соперник:</p>
                 <textarea id="question-input" class="input textarea" placeholder="Например: Как ты проводишь выходные?"></textarea>
+                <div id="ai-status" style="font-size:12px;color:#7c3aed;min-height:16px;margin:6px 0;text-align:center;"></div>
+                <button class="btn-secondary" onclick="aiQuestion()" style="background:#f3e8ff;color:#7c3aed;">✨ ИИ подскажет вопрос</button>
                 <label style="display:flex;align-items:center;gap:10px;background:#ffe0eb;border-radius:15px;padding:12px;margin-bottom:15px;color:#d6336c;font-size:14px;cursor:pointer;">
                     <input type="checkbox" id="blind-checkbox" style="width:20px;height:20px;flex-shrink:0;">
                     🕶️ Слепое свидание — фото раскроется только при взаимной симпатии
@@ -180,8 +182,6 @@
                 <p class="hint-text">Тебе задали вопрос:</p>
                 <div id="round-question-text" class="question-bubble">...</div>
                 <textarea id="round-answer-input" class="input textarea" placeholder="Твой ответ..."></textarea>
-                <div id="ai-status" style="font-size:12px;color:#7c3aed;min-height:16px;margin:6px 0;text-align:center;"></div>
-                <button class="btn-secondary" onclick="aiQuestion()" style="background:#f3e8ff;color:#7c3aed;">✨ ИИ подскажет вопрос</button>
                 <button class="btn-primary" onclick="submitAnswer()">Отправить ответ ✉️</button>
                 <button class="btn-secondary" onclick="leaveRound()">🚪 Соперник не в сети — выйти</button>
             </div>
