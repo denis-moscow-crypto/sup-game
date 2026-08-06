@@ -74,6 +74,7 @@
                     <div id="profile-info" class="profile-info"></div>
                 </div>
                 <button class="btn-primary" onclick="openQuestion()">Играть 💘</button>
+                <button class="btn-secondary" onclick="openMatches()">Мои совпадения 💖</button>
                 <button class="btn-secondary" onclick="openRating()">Рейтинг 👑</button>
                 <button class="btn-secondary" onclick="openAchievements()">Достижения 🏅</button>
                 <button class="btn-secondary" onclick="openShop()">Магазин 💎</button>
@@ -102,6 +103,13 @@
             <div class="player-info"><div class="player-name">Premium на месяц</div>
             <div class="player-meta">Значок 💎 и функция «кто меня выбрал»</div></div></div>
             <button class="btn-primary" onclick="openBuy('buy_premium')">Купить — 150 ⭐</button>
+        <button class="btn-secondary" onclick="showProfile()">← Назад</button>
+    </div>
+</div>
+<div id="matches-screen" class="screen">
+    <div class="form-container">
+        <h2>Мои совпадения 💖</h2>
+        <div id="matches-list" class="players-list"></div>
         <button class="btn-secondary" onclick="showProfile()">← Назад</button>
     </div>
 </div>
@@ -189,7 +197,7 @@
             </div>
         </div>
     </div>
-    <script src="script.js?v=21"></script>
-    <script src="script2.js?v=21"></script>
+    <script src="script.js?v=22"></script>
+    <script src="script2.js?v=22"></script>
 </body>
 </html>
