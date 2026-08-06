@@ -248,6 +248,12 @@ async function showResult() {
             const u = opp.username.replace('@', '');
             body += '<br>Напиши скорее: <a href="https://t.me/' + u + '" target="_blank">@' + u + '</a>';
         }
+                body += '<div style="margin-top:12px;font-size:14px;color:#777;"><b>Сделай подарок совпадению:</b></div>' +
+            '<div class="choice-buttons" style="margin-top:6px;">' +
+            '<button class="btn-yes" style="background:#ffe0eb;color:#d6336c;font-size:14px;" onclick="openGift(\'rose\')">🌹 15⭐</button>' +
+            '<button class="btn-yes" style="background:#ffe0eb;color:#d6336c;font-size:14px;" onclick="openGift(\'teddy\')">🧸 50⭐</button>' +
+            '<button class="btn-yes" style="background:#ffe0eb;color:#d6336c;font-size:14px;" onclick="openGift(\'ring\')">💍 150⭐</button>' +
+            '</div>';
         document.getElementById('result-body').innerHTML = body;
     } else {
         document.getElementById('result-emoji').textContent = '💔';
@@ -376,4 +382,9 @@ async function openMatches() {
             '</div></div>';
     }
     list.innerHTML = html;
+}
+
+function openGift(type) {
+    if (!currentOpponent || !currentOpponent.id) { alert('Сначала сыграй раунд!'); return; }
+    window.open('https://t.me/sup_love_game_bot?start=gift_' + type + '_' + currentOpponent.id, '_blank');
 }
