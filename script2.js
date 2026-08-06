@@ -31,11 +31,10 @@ async function searchTick() {
     const { data: games } = await sb.from('games').select('*')
         .or('player1.eq.' + myId + ',player2.eq.' + myId)
         .neq('status', 'done').limit(1);
-        if (games && games.length) {
+    if (games && games.length) {
         const g = games[0];
         const age = Date.now() - new Date(g.created_at).getTime();
         if (age > 20 * 60 * 1000) {
-            // игра протухла (соперник пропал) — закрываем и ищем заново
             await sb.from('games').update({ status: 'done' }).eq('id', g.id);
             await sb.from('profiles').update({ status: 'idle' }).in('id', [g.player1, g.player2]);
         } else {
@@ -238,7 +237,7 @@ async function showResult() {
             body += '<div class="avatar-circle big" style="margin:0 auto 10px;background-image:url(' + opp.photo + ')"></div>';
         }
         body += '<div class="profile-name">' + escapeHtml(opp.name) + '</div>';
-                body += '<div class="profile-line">тоже выбрал(а) тебя! 🎉</div>';
+        body += '<div class="profile-line">тоже выбрал(а) тебя! 🎉</div>';
         const comp = zodiacCompat(userData.zodiac, opp.zodiac);
         if (comp) {
             body += '<div class="profile-line" style="margin-top:8px;background:#fff0f5;border-radius:12px;padding:8px;">' +
@@ -248,7 +247,7 @@ async function showResult() {
             const u = opp.username.replace('@', '');
             body += '<br>Напиши скорее: <a href="https://t.me/' + u + '" target="_blank">@' + u + '</a>';
         }
-                body += '<div style="margin-top:12px;font-size:14px;color:#777;"><b>Сделай подарок совпадению:</b></div>' +
+        body += '<div style="margin-top:12px;font-size:14px;color:#777;"><b>Сделай подарок совпадению:</b></div>' +
             '<div class="choice-buttons" style="margin-top:6px;">' +
             '<button class="btn-yes" style="background:#ffe0eb;color:#d6336c;font-size:14px;" onclick="openGift(\'rose\')">🌹 15⭐</button>' +
             '<button class="btn-yes" style="background:#ffe0eb;color:#d6336c;font-size:14px;" onclick="openGift(\'teddy\')">🧸 50⭐</button>' +
@@ -262,7 +261,7 @@ async function showResult() {
             ? 'Таинственный незнакомец остался тайной 🕶️<br>Но впереди ещё много сердец!'
             : 'Симпатия не совпала. Но впереди ещё много сердец!';
     }
-      if (match) burstHearts();
+    if (match) burstHearts();
     showScreen('result-screen');
 }
 
@@ -280,7 +279,7 @@ async function openRating() {
     list.innerHTML = '<div class="loading">Загружаем рейтинг...</div>';
     const { data, error } = await sb.from('profiles').select('*').order('score', { ascending: false }).limit(10);
     if (error) { list.innerHTML = '<div class="loading">⚠️ ' + error.message + '</div>'; return; }
-    const medals = ['🥇', '🥈', ''];
+    const medals = ['🥇', '🥈', '🥉'];
     list.innerHTML = (data || []).map((p, i) =>
         '<div class="player-card"><div class="player-photo" style="background-image:url(' + (p.photo || '') + ')">' + (p.photo ? '' : '💕') + '</div>' +
         '<div class="player-info"><div class="player-name">' + (medals[i] || (i + 1) + '.') + ' ' + escapeHtml(p.name) + (p.premium ? ' 💎' : '') + '</div>' +
@@ -329,6 +328,17 @@ function openBuy(param) {
     window.open('https://t.me/sup_love_game_bot?start=' + param, '_blank');
 }
 
+async function leaveRound() {
+    if (!confirm('Соперник не в сети? Выйти из раунда?')) return;
+    if (currentGame) {
+        await sb.from('games').update({ status: 'done' }).eq('id', currentGame.id);
+        await sb.from('profiles').update({ status: 'idle' }).in('id', [currentGame.player1, currentGame.player2]);
+    }
+    currentGame = null;
+    stopPolling(); stopWaiting();
+    showProfile();
+}
+
 function burstHearts() {
     const emojis = ['💖', '💘', '💕', '❤️', '💗'];
     for (let i = 0; i < 18; i++) {
@@ -342,17 +352,6 @@ function burstHearts() {
         document.body.appendChild(s);
         setTimeout(() => s.remove(), 1300);
     }
-}
-
-async function leaveRound() {
-    if (!confirm('Соперник не в сети? Выйти из раунда?')) return;
-    if (currentGame) {
-        await sb.from('games').update({ status: 'done' }).eq('id', currentGame.id);
-        await sb.from('profiles').update({ status: 'idle' }).in('id', [currentGame.player1, currentGame.player2]);
-    }
-    currentGame = null;
-    stopPolling(); stopWaiting();
-    showProfile();
 }
 
 async function openMatches() {
