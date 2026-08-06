@@ -343,3 +343,32 @@ async function leaveRound() {
     stopPolling(); stopWaiting();
     showProfile();
 }
+
+async function openMatches() {
+    showScreen('matches-screen');
+    const list = document.getElementById('matches-list');
+    if (!sb) { list.innerHTML = '<div class="loading">⚠️ База не подключена</div>'; return; }
+    list.innerHTML = '<div class="loading">Загружаем совпадения...</div>';
+    const myId = Number(userData.telegramId);
+    const { data, error } = await sb.from('games').select('*')
+        .or('player1.eq.' + myId + ',player2.eq.' + myId)
+        .eq('status', 'done').eq('c1', true).eq('c2', true)
+        .order('created_at', { ascending: false });
+    if (error) { list.innerHTML = '<div class="loading">⚠️ ' + error.message + '</div>'; return; }
+    if (!data || !data.length) {
+        list.innerHTML = '<div class="loading">Пока нет совпадений 😢<br>Играй — любовь близко!</div>';
+        return;
+    }
+    let html = '';
+    for (const g of data) {
+        const oppId = String(g.player1) === String(myId) ? g.player2 : g.player1;
+        const { data: opp } = await sb.from('profiles').select('*').eq('id', oppId).single();
+        const p = opp || {};
+        html += '<div class="player-card"><div class="player-photo" style="background-image:url(' + (p.photo || '') + ')">' + (p.photo ? '' : '💖') + '</div>' +
+            '<div class="player-info"><div class="player-name">' + escapeHtml(p.name) + '</div>' +
+            '<div class="player-meta">' + (p.city ? escapeHtml(p.city) + ' · ' : '') + 'ваше совпадение 💖</div>' +
+            (p.username ? '<div class="player-meta"><a href="https://t.me/' + escapeHtml(p.username).replace('@', '') + '" target="_blank">' + escapeHtml(p.username) + '</a></div>' : '') +
+            '</div></div>';
+    }
+    list.innerHTML = html;
+}
