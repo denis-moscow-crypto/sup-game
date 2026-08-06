@@ -180,6 +180,8 @@
                 <p class="hint-text">Тебе задали вопрос:</p>
                 <div id="round-question-text" class="question-bubble">...</div>
                 <textarea id="round-answer-input" class="input textarea" placeholder="Твой ответ..."></textarea>
+                <div id="ai-status" style="font-size:12px;color:#7c3aed;min-height:16px;margin:6px 0;text-align:center;"></div>
+                <button class="btn-secondary" onclick="aiQuestion()" style="background:#f3e8ff;color:#7c3aed;">✨ ИИ подскажет вопрос</button>
                 <button class="btn-primary" onclick="submitAnswer()">Отправить ответ ✉️</button>
                 <button class="btn-secondary" onclick="leaveRound()">🚪 Соперник не в сети — выйти</button>
             </div>
@@ -214,7 +216,7 @@
             </div>
         </div>
     </div>
-    <script src="script.js?v=24"></script>
-    <script src="script2.js?v=24"></script>
+    <script src="script.js?v=25"></script>
+    <script src="script2.js?v=25"></script>
 </body>
 </html>
