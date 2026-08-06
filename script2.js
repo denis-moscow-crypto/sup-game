@@ -112,12 +112,12 @@ async function renderRound() {
                 setAvatar('choose-photo', null);
                 document.getElementById('choose-photo').textContent = '🕶️';
                 document.getElementById('choose-info').innerHTML =
-                    '<div class="profile-name">Таинственный незнакомец</div>' +
+                    '<div class="profile-name">Таинственный незнакомец ' + (ZODIAC[opp.zodiac] || '') + '</div>' +
                     '<div class="profile-line">' + (opp.age || '') + ' лет · ' + escapeHtml(opp.city || '') + '</div>';
             } else {
                 setAvatar('choose-photo', opp.photo);
                 document.getElementById('choose-info').innerHTML =
-                    '<div class="profile-name">' + escapeHtml(opp.name) + '</div>' +
+                    '<div class="profile-name">' + escapeHtml(opp.name) + ' ' + (ZODIAC[opp.zodiac] || '') + '</div>' +
                     '<div class="profile-line">' + (opp.age || '') + ' лет · ' + escapeHtml(opp.city || '') + '</div>';
             }
             document.getElementById('choose-answer').textContent = oppAnswer || '...';
@@ -238,7 +238,12 @@ async function showResult() {
             body += '<div class="avatar-circle big" style="margin:0 auto 10px;background-image:url(' + opp.photo + ')"></div>';
         }
         body += '<div class="profile-name">' + escapeHtml(opp.name) + '</div>';
-        body += '<div class="profile-line">тоже выбрал(а) тебя! 🎉</div>';
+                body += '<div class="profile-line">тоже выбрал(а) тебя! 🎉</div>';
+        const comp = zodiacCompat(userData.zodiac, opp.zodiac);
+        if (comp) {
+            body += '<div class="profile-line" style="margin-top:8px;background:#fff0f5;border-radius:12px;padding:8px;">' +
+                ZODIAC[userData.zodiac] + ' + ' + ZODIAC[opp.zodiac] + ' — ' + comp.percent + '% совместимости<br>' + comp.phrase + '</div>';
+        }
         if (opp.username) {
             const u = opp.username.replace('@', '');
             body += '<br>Напиши скорее: <a href="https://t.me/' + u + '" target="_blank">@' + u + '</a>';
