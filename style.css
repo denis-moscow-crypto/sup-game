@@ -174,3 +174,29 @@ body.theme-male .btn-primary { background: linear-gradient(90deg, #4d8dff, #6aa5
 body.theme-male .question-bubble { background: #dbe9ff !important; color: #2b62d9 !important; }
 body.theme-male .logo { color: #4d8dff !important; }
 body.theme-male .search-heart { filter: hue-rotate(190deg); }
+/* ===== Анимация ожидания ===== */
+.search-heart-wrap { position: relative; text-align: center; padding: 10px 0; }
+.search-heart-wrap::before {
+    content: '';
+    position: absolute; left: 50%; top: 50%;
+    width: 130px; height: 130px; margin: -65px 0 0 -65px;
+    background: radial-gradient(circle, rgba(255,105,180,.35), transparent 70%);
+    border-radius: 50%;
+    animation: pulseGlow 2s ease-in-out infinite;
+}
+@keyframes pulseGlow {
+    0%, 100% { transform: scale(.8); opacity: .6; }
+    50% { transform: scale(1.25); opacity: 1; }
+}
+.search-heart {
+    position: relative;
+    font-size: 80px;
+    animation: heartbeat 1.2s ease-in-out infinite;
+}
+@keyframes heartbeat {
+    0%, 100% { transform: scale(1); }
+    25% { transform: scale(1.15); }
+    40% { transform: scale(.97); }
+    60% { transform: scale(1.1); }
+}
+#search-status { transition: opacity .3s; }
