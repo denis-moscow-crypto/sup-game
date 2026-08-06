@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>СУП 2.0</title>
-    <link rel="stylesheet" href="style.css?v=15">
+    <link rel="stylesheet" href="style.css?v=23">
     <script>
         window.onerror = function (msg, src, line) {
             window.__err = (window.__err || '') + msg + ' (строка ' + line + ')\n';
@@ -31,22 +31,18 @@
                 <h1 class="logo">СУП</h1>
                 <p class="tagline">Спросил · Увидел · Полюбил</p>
                 <p class="subtitle" id="welcome-subtitle">Легендарная игра вернулась в Telegram!</p>
-<div id="welcome-instructions" style="background:rgba(255,255,255,.85);border-radius:15px;padding:12px;margin:15px 0;font-size:14px;color:#555;text-align:left;">
-    <b>Как играть:</b><br>
-    1️⃣ Создай профиль и придумай вопрос<br>
-    2️⃣ Мы подберём тебе пару<br>
-    3️⃣ Ответьте друг другу и выберите: ❤️ или 👎<br>
-    4️⃣ Взаимная симпатия — знакомьтесь! 💕
-</div>
+                <div id="welcome-instructions" style="background:rgba(255,255,255,.85);border-radius:15px;padding:12px;margin:15px 0;font-size:14px;color:#555;text-align:left;">
+                    <b>Как играть:</b><br>
+                    1️⃣ Создай профиль и придумай вопрос<br>
+                    2️⃣ Мы подберём тебе пару<br>
+                    3️⃣ Ответьте друг другу и выберите: ❤️ или 👎<br>
+                    4️⃣ Взаимная симпатия — знакомьтесь! 💕
+                </div>
                 <div id="welcome-back" style="display:none;">
-    <div style="font-size:18px;font-weight:bold;color:#d6336c;margin-bottom:6px;">С возвращением, <span id="welcome-name"></span>! 💖</div>
-    <div style="font-size:14px;color:#777;margin-bottom:8px;">Твоя пара уже где-то рядом...</div>
-    <div style="font-size:14px;color:#555;" id="welcome-stats"></div>
-</div>
-                <label style="display:flex;align-items:center;gap:10px;font-size:13px;color:#777;margin-bottom:12px;cursor:pointer;">
-    <input type="checkbox" id="agree-checkbox" style="width:18px;height:18px;flex-shrink:0;">
-    Мне есть 16 лет, принимаю правила игры и согласен на обработку данных
-</label>
+                    <div style="font-size:18px;font-weight:bold;color:#d6336c;margin-bottom:6px;">С возвращением, <span id="welcome-name"></span>! 💖</div>
+                    <div style="font-size:14px;color:#777;margin-bottom:8px;">Твоя пара уже где-то рядом...</div>
+                    <div style="font-size:14px;color:#555;" id="welcome-stats"></div>
+                </div>
                 <button class="btn-primary" id="welcome-btn" onclick="startApp()">Начать 💕</button>
             </div>
         </div>
@@ -67,6 +63,10 @@
                     <button class="gender-btn" data-gender="male" onclick="selectGender('male')">👨 Парень</button>
                     <button class="gender-btn" data-gender="female" onclick="selectGender('female')">👩 Девушка</button>
                 </div>
+                <label style="display:flex;align-items:center;gap:10px;font-size:13px;color:#777;margin-bottom:12px;cursor:pointer;">
+                    <input type="checkbox" id="agree-checkbox" style="width:18px;height:18px;flex-shrink:0;">
+                    Мне есть 16 лет, принимаю правила игры и согласен на обработку данных
+                </label>
                 <button class="btn-primary" onclick="submitRegistration()">Создать профиль 🚀</button>
             </div>
         </div>
@@ -97,27 +97,13 @@
             </div>
         </div>
 
-        <div id="shop-screen" class="screen">
-        <div class="form-container">
-        <h2>Магазин 💎</h2>
-        <div class="player-card"><div class="player-photo" style="background:#ffe0eb;">⭐</div>
-            <div class="player-info"><div class="player-name">Суперлайк</div>
-            <div class="player-meta">Соперник сразу увидит твою симпатию</div></div></div>
-        <button class="btn-primary" onclick="openBuy('buy_superlike')">Купить — 5 ⭐</button>
-        <div class="player-card" style="margin-top:15px;"><div class="player-photo" style="background:#ffe0eb;">💎</div>
-            <div class="player-info"><div class="player-name">Premium на месяц</div>
-            <div class="player-meta">Значок 💎 и функция «кто меня выбрал»</div></div></div>
-            <button class="btn-primary" onclick="openBuy('buy_premium')">Купить — 150 ⭐</button>
-        <button class="btn-secondary" onclick="showProfile()">← Назад</button>
-    </div>
-</div>
-<div id="matches-screen" class="screen">
-    <div class="form-container">
-        <h2>Мои совпадения 💖</h2>
-        <div id="matches-list" class="players-list"></div>
-        <button class="btn-secondary" onclick="showProfile()">← Назад</button>
-    </div>
-</div>
+        <div id="matches-screen" class="screen">
+            <div class="form-container">
+                <h2>Мои совпадения 💖</h2>
+                <div id="matches-list" class="players-list"></div>
+                <button class="btn-secondary" onclick="showProfile()">← Назад</button>
+            </div>
+        </div>
 
         <div id="rating-screen" class="screen">
             <div class="form-container">
@@ -126,11 +112,26 @@
                 <button class="btn-secondary" onclick="showProfile()">← Назад</button>
             </div>
         </div>
-        
+
         <div id="achievements-screen" class="screen">
             <div class="form-container">
                 <h2>Твои достижения 🏅</h2>
                 <div id="achievements-list" class="players-list"></div>
+                <button class="btn-secondary" onclick="showProfile()">← Назад</button>
+            </div>
+        </div>
+
+        <div id="shop-screen" class="screen">
+            <div class="form-container">
+                <h2>Магазин 💎</h2>
+                <div class="player-card"><div class="player-photo" style="background:#ffe0eb;">⭐</div>
+                    <div class="player-info"><div class="player-name">Суперлайк</div>
+                    <div class="player-meta">Соперник сразу увидит твою симпатию</div></div></div>
+                <button class="btn-primary" onclick="openBuy('buy_superlike')">Купить — 5 ⭐</button>
+                <div class="player-card" style="margin-top:15px;"><div class="player-photo" style="background:#ffe0eb;">💎</div>
+                    <div class="player-info"><div class="player-name">Premium на месяц</div>
+                    <div class="player-meta">Значок 💎 и функция «кто меня выбрал»</div></div></div>
+                <button class="btn-primary" onclick="openBuy('buy_premium')">Купить — 150 ⭐</button>
                 <button class="btn-secondary" onclick="showProfile()">← Назад</button>
             </div>
         </div>
@@ -149,14 +150,10 @@
             </div>
         </div>
 
-                <div id="search-screen" class="screen">
+        <div id="search-screen" class="screen">
             <div class="form-container">
                 <div class="search-heart-wrap"><div class="search-heart" id="search-heart">💘</div></div>
                 <h2 id="search-title">Ищем тебе пару...</h2>
-                <p id="search-status" class="hint-text">Сканируем сердца поблизости 🔭</p>
-                <button class="btn-secondary" onclick="cancelSearch()">Отменить ✋</button>
-            </div>
-        </div>
                 <p id="search-status" class="hint-text">Сканируем сердца поблизости 🔭</p>
                 <button class="btn-secondary" onclick="cancelSearch()">Отменить ✋</button>
             </div>
@@ -182,9 +179,9 @@
                 </div>
                 <p class="hint-text">Ответ на твой вопрос:</p>
                 <div id="choose-answer" class="question-bubble">...</div>
-                 <div id="superlike-banner" style="display:none;background:#fff3c0;color:#a07800;border-radius:15px;padding:10px;text-align:center;margin-bottom:10px;font-weight:bold;">⭐ Тебе отправили суперлайк!</div>
+                <button class="btn-secondary" onclick="leaveRound()">🚪 Соперник не в сети — выйти</button>
+                <div id="superlike-banner" style="display:none;background:#fff3c0;color:#a07800;border-radius:15px;padding:10px;text-align:center;margin-bottom:10px;font-weight:bold;">⭐ Тебе отправили суперлайк!</div>
                 <div id="premium-hint" style="display:none;background:#e7d9ff;color:#6b3fa0;border-radius:15px;padding:10px;text-align:center;margin-bottom:10px;font-weight:bold;">💎 Premium: соперник уже выбрал тебя ❤️</div>
-               <button class="btn-secondary" onclick="leaveRound()">🚪 Соперник не в сети — выйти</button>
                 <div class="choice-buttons">
                     <button class="btn-no" onclick="submitChoice(false)">👎</button>
                     <button class="btn-yes" id="superlike-btn" style="display:none;background:#ffe9a8;" onclick="submitSuperlike()">⭐</button>
