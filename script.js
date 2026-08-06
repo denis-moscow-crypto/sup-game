@@ -129,7 +129,7 @@ function applyTheme() {
 function startApp() {
     if (!sb) { alert('⚠️ База не подключена! Проверь ключ SUPABASE_KEY.'); }
     const saved = loadProfile();
-    if (saved) { userData = Object.assign(userData, saved); startHeartbeat(); showProfile(); }
+    if (saved) { userData = Object.assign(userData, saved); applyTheme(); startHeartbeat(); openQuestion(); }
     else { showScreen('registration-screen'); prefillFromTelegram(); }
 }
 
@@ -244,3 +244,27 @@ function inviteFriends() {
     const text = 'Го в СУП 2.0 — отвечаешь на вопросы, влюбляешься, получаешь призы! 💕';
     window.open('https://t.me/share/url?url=' + encodeURIComponent(link) + '&text=' + encodeURIComponent(text), '_blank');
 }
+
+function initWelcome() {
+    const saved = loadProfile();
+    if (saved && saved.name) {
+        document.getElementById('welcome-instructions').style.display = 'none';
+        document.getElementById('welcome-back').style.display = 'block';
+        document.getElementById('welcome-name').textContent = saved.name;
+        document.getElementById('welcome-subtitle').textContent = 'Рады видеть тебя снова!';
+        const btn = document.getElementById('welcome-btn');
+        if (btn) btn.textContent = 'Играть 💘';
+        userData = Object.assign(userData, saved);
+        applyTheme();
+        if (sb) {
+            sb.from('profiles').select('score, wins, superlikes').eq('id', Number(saved.telegramId)).single().then(function (res) {
+                const d = res.data;
+                if (d) {
+                    document.getElementById('welcome-stats').innerHTML =
+                        '💎 ' + (d.score || 0) + ' · ❤️ ' + (d.wins || 0) + ' · ⭐ ' + (d.superlikes || 0);
+                }
+            });
+        }
+    }
+}
+initWelcome();
