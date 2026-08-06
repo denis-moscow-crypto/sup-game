@@ -200,3 +200,5 @@ body.theme-male .search-heart { filter: hue-rotate(190deg); }
     60% { transform: scale(1.1); }
 }
 #search-status { transition: opacity .3s; }
+body.theme-male #welcome-screen { background: linear-gradient(160deg, #e3eeff, #c9dcff); }
+body.theme-female #welcome-screen { background: linear-gradient(160deg, #ffe0eb, #ffd0e0); }
