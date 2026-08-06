@@ -93,6 +93,9 @@ async function renderRound() {
         if (!document.getElementById('round-answer-screen').classList.contains('active')) {
             const oppQ = role === 'p1' ? g.q2 : g.q1;
             document.getElementById('round-question-text').textContent = oppQ || 'Расскажи о себе 😉';
+            document.getElementById('rec-preview').style.display = 'none';
+            setRecStatus('');
+            document.getElementById('rec-btn').textContent = '🎤 Записать голос';
             showScreen('round-answer-screen');
         }
         return;
@@ -120,6 +123,12 @@ async function renderRound() {
                     '<div class="profile-line">' + (opp.age || '') + ' лет · ' + escapeHtml(opp.city || '') + '</div>';
             }
             document.getElementById('choose-answer').textContent = oppAnswer || '...';
+            const oppVoice = role === 'p1' ? g.va2 : g.va1;
+            const vp = document.getElementById('choose-voice');
+            if (vp) {
+                if (oppVoice) { vp.src = oppVoice; vp.style.display = 'block'; }
+                else { vp.style.display = 'none'; }
+            }
             const oppSl = role === 'p1' ? g.sl2 : g.sl1;
             document.getElementById('superlike-banner').style.display = oppSl ? 'block' : 'none';
             const oppC = role === 'p1' ? g.c2 : g.c1;
@@ -173,10 +182,14 @@ async function finishGameStats(data) {
 
 async function submitAnswer() {
     const text = document.getElementById('round-answer-input').value.trim();
-    if (!text) { alert('Напиши ответ!'); return; }
+    if (!text && !voiceData) { alert('Напиши ответ или запиши голос 🎤'); return; }
     const role = myRole(currentGame);
     const field = role === 'p1' ? 'a1' : 'a2';
-    await sb.from('games').update({ [field]: text }).eq('id', currentGame.id);
+    const upd = {};
+    upd[field] = text || '🎤 Голосовое сообщение';
+    if (voiceData) upd[role === 'p1' ? 'va1' : 'va2'] = voiceData;
+    await sb.from('games').update(upd).eq('id', currentGame.id);
+    voiceData = null;
     const { data } = await sb.from('games').select('*').eq('id', currentGame.id).single();
     currentGame = data;
     if (data.a1 && data.a2 && data.status === 'answers') {
@@ -386,4 +399,61 @@ async function openMatches() {
 function openGift(type) {
     if (!currentOpponent || !currentOpponent.id) { alert('Сначала сыграй раунд!'); return; }
     window.open('https://t.me/sup_love_game_bot?start=gift_' + type + '_' + currentOpponent.id, '_blank');
+}
+
+let mediaRecorder = null;
+let recChunks = [];
+let voiceData = null;
+let recTimer = null;
+let recSeconds = 0;
+
+function setRecStatus(t) {
+    const el = document.getElementById('rec-status');
+    if (el) el.textContent = t;
+}
+
+async function toggleRecording() {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        clearInterval(recTimer);
+        mediaRecorder.stop();
+        document.getElementById('rec-btn').textContent = '🎤 Записать голос';
+        return;
+    }
+    voiceData = null;
+    document.getElementById('rec-preview').style.display = 'none';
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        recChunks = [];
+        mediaRecorder.ondataavailable = (e) => recChunks.push(e.data);
+        mediaRecorder.onstop = () => {
+            stream.getTracks().forEach(t => t.stop());
+            const blob = new Blob(recChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+            if (blob.size > 900 * 1024) {
+                alert('Слишком длинно 🙈 Запиши до 60 секунд.');
+                setRecStatus('');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = () => {
+                voiceData = reader.result;
+                const prev = document.getElementById('rec-preview');
+                prev.src = voiceData;
+                prev.style.display = 'block';
+                setRecStatus('✅ Голос прикреплён к ответу!');
+            };
+            reader.readAsDataURL(blob);
+        };
+        mediaRecorder.start();
+        recSeconds = 0;
+        setRecStatus('🔴 Идёт запись... 0 сек');
+        document.getElementById('rec-btn').textContent = '⏹ Стоп';
+        recTimer = setInterval(() => {
+            recSeconds++;
+            setRecStatus('🔴 Идёт запись... ' + recSeconds + ' сек');
+            if (recSeconds >= 60) toggleRecording();
+        }, 1000);
+    } catch (e) {
+        alert('Микрофон недоступен 🙏 Ответь текстом.');
+    }
 }
