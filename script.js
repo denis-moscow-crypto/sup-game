@@ -1,5 +1,5 @@
 const SUPABASE_URL = 'https://oreexiwvjhwssznwxndn.supabase.co';
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9yZWV4aXd2amh3c3N6bnd4bmRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU4MzAzNTUsImV4cCI6MjEwMTQwNjM1NX0.Jq33H7nyHOTx00_xBYEOsS5u02C6_i_iDnQyGcbaTZM"
+const SUPABASE_KEY = 'ВСТАВЬ_СВОЙ_КЛЮЧ_eyJ';
 
 let sb = null;
 try {
@@ -32,15 +32,14 @@ const waitPhrases = {
     answer: ['Соперник выбирает лучшие слова 😉', 'Шлифует ответ до блеска ✨', 'Советуется с сердцем 💓', 'Пишет, стирает и снова пишет 🙈'],
     choice: ['Соперник делает важный выбор 🤔', 'Решается судьба твоего сердечка ⚖️', 'Ещё чуть-чуть... 💫', 'Перечитывает твой ответ 👀']
 };
-let waitTimer = null;
-let waitIndex = 0;
-
 const waitTitles = {
     search: 'Ищем тебе пару...',
     answer: 'Соперник отвечает на твой вопрос...',
     choice: 'Соперник делает выбор...'
 };
 const waitEmojis = { search: '💘', answer: '✍️', choice: '💭' };
+let waitTimer = null;
+let waitIndex = 0;
 
 function startWaiting(mode) {
     stopWaiting();
@@ -121,11 +120,13 @@ function setAvatar(elId, src) {
     if (src) { el.style.backgroundImage = 'url(' + src + ')'; el.textContent = ''; }
     else { el.style.backgroundImage = 'none'; el.textContent = '📷'; }
 }
+
 function applyTheme() {
     document.body.classList.remove('theme-male', 'theme-female');
     if (userData.gender === 'male') document.body.classList.add('theme-male');
     if (userData.gender === 'female') document.body.classList.add('theme-female');
 }
+
 function startApp() {
     if (!sb) { alert('⚠️ База не подключена! Проверь ключ SUPABASE_KEY.'); }
     const saved = loadProfile();
@@ -154,15 +155,19 @@ function selectGender(gender) {
 
 function compressImage(file, callback) {
     const reader = new FileReader();
+    reader.onerror = () => callback(null);
     reader.onload = (ev) => {
         const img = new Image();
+        img.onerror = () => callback(null);
         img.onload = () => {
-            const canvas = document.createElement('canvas');
-            const scale = Math.min(1, 300 / Math.max(img.width, img.height));
-            canvas.width = Math.round(img.width * scale);
-            canvas.height = Math.round(img.height * scale);
-            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-            callback(canvas.toDataURL('image/jpeg', 0.7));
+            try {
+                const canvas = document.createElement('canvas');
+                const scale = Math.min(1, 300 / Math.max(img.width, img.height));
+                canvas.width = Math.max(1, Math.round(img.width * scale));
+                canvas.height = Math.max(1, Math.round(img.height * scale));
+                canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                callback(canvas.toDataURL('image/jpeg', 0.7));
+            } catch (e) { callback(null); }
         };
         img.src = ev.target.result;
     };
@@ -175,6 +180,10 @@ function uploadPhoto() {
         const file = e.target.files[0];
         if (!file) return;
         compressImage(file, (compressed) => {
+            if (!compressed) {
+                alert('Не удалось обработать это фото 😢\nПопробуй другое — лучше JPG или PNG из галереи.');
+                return;
+            }
             userData.photo = compressed;
             setAvatar('avatar-preview', compressed);
         });
