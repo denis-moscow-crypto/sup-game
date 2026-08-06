@@ -35,14 +35,27 @@ const waitPhrases = {
 let waitTimer = null;
 let waitIndex = 0;
 
+const waitTitles = {
+    search: 'Ищем тебе пару...',
+    answer: 'Соперник отвечает на твой вопрос...',
+    choice: 'Соперник делает выбор...'
+};
+const waitEmojis = { search: '💘', answer: '✍️', choice: '💭' };
+
 function startWaiting(mode) {
     stopWaiting();
     waitIndex = 0;
     const el = document.getElementById('search-status');
+    const titleEl = document.getElementById('search-title');
+    const heartEl = document.getElementById('search-heart');
+    if (titleEl && waitTitles[mode]) titleEl.textContent = waitTitles[mode];
+    if (heartEl) heartEl.textContent = waitEmojis[mode] || '💘';
     el.textContent = waitPhrases[mode][0];
+    try { el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 400 }); } catch (e) {}
     waitTimer = setInterval(() => {
         waitIndex = (waitIndex + 1) % waitPhrases[mode].length;
         el.textContent = waitPhrases[mode][waitIndex];
+        try { el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 400 }); } catch (e) {}
     }, 4000);
 }
 function stopWaiting() { if (waitTimer) { clearInterval(waitTimer); waitTimer = null; } }
