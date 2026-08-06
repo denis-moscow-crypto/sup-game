@@ -202,3 +202,38 @@ body.theme-male .search-heart { filter: hue-rotate(190deg); }
 #search-status { transition: opacity .3s; }
 body.theme-male #welcome-screen { background: linear-gradient(160deg, #e3eeff, #c9dcff); }
 body.theme-female #welcome-screen { background: linear-gradient(160deg, #ffe0eb, #ffd0e0); }
+/* ===== Читаемость: шрифт и цвета ===== */
+body, button, input, textarea, select, .app {
+    font-family: 'Nunito', 'Segoe UI', system-ui, sans-serif !important;
+}
+body { color: #3a2e39; -webkit-font-smoothing: antialiased; }
+
+h1, h2 { font-weight: 800 !important; letter-spacing: .3px; }
+
+.input, select.input, textarea.input {
+    color: #3a2e39 !important;
+    font-size: 16px !important;
+    font-weight: 600;
+}
+.input::placeholder, textarea::placeholder { color: #a08c9b; font-weight: 500; }
+
+.hint-text, .profile-line, .player-meta, .upload-hint {
+    color: #6b5a66 !important;
+    font-size: 14.5px !important;
+    line-height: 1.45;
+}
+.profile-name, .player-name { color: #3a2e39 !important; font-weight: 800 !important; }
+
+.btn-primary, .btn-secondary, .btn-yes, .btn-no, .gender-btn {
+    font-weight: 800 !important;
+    font-size: 16px !important;
+    letter-spacing: .2px;
+}
+.btn-secondary { color: #c2255c !important; }
+a { color: #c2255c; font-weight: 700; }
+
+body.theme-male .hint-text, body.theme-male .profile-line,
+body.theme-male .player-meta, body.theme-male .upload-hint { color: #51607a !important; }
+body.theme-male .profile-name, body.theme-male .player-name { color: #24314d !important; }
+body.theme-male .btn-secondary { color: #2b62d9 !important; }
+body.theme-male a { color: #2b62d9; }
