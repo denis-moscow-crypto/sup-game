@@ -59,11 +59,10 @@ async function searchTick() {
         .eq('status', 'searching').neq('id', myId).neq('gender', userData.gender).limit(1);
     if (candidates && candidates.length) {
         const opp = candidates[0];
-                const { error } = await sb.from('games').insert({
+        const { error } = await sb.from('games').insert({
             player1: myId, player2: opp.id, q1: userData.question, q2: opp.question,
             vq1: userData.questionVoice || null, vq2: opp.vq || null,
             blind: !!(userData.blind || opp.blind)
-        });
         });
         if (!error) {
             await sb.from('profiles').update({ status: 'in_game' }).in('id', [myId, opp.id]);
@@ -106,8 +105,14 @@ async function renderRound() {
         if (!document.getElementById('round-answer-screen').classList.contains('active')) {
             const oppQ = role === 'p1' ? g.q2 : g.q1;
             document.getElementById('round-question-text').textContent = oppQ || 'Расскажи о себе 😉';
+            const oppVQ = role === 'p1' ? g.vq2 : g.vq1;
+            const vqEl = document.getElementById('round-question-voice');
+            if (vqEl) {
+                if (oppVQ) { vqEl.src = oppVQ; vqEl.style.display = 'block'; }
+                else { vqEl.style.display = 'none'; }
+            }
             document.getElementById('rec-preview').style.display = 'none';
-            setRecStatus('');
+            setRecStatusEl('rec-status', '');
             document.getElementById('rec-btn').textContent = '🎤 Записать голос';
             showScreen('round-answer-screen');
         }
@@ -318,7 +323,7 @@ const BADGES = [
     { id: 'love1', emoji: '💘', name: 'Сердцеед', desc: 'Первая взаимная симпатия', test: s => (s.wins || 0) >= 1 },
     { id: 'love3', emoji: '🔥', name: 'Казанова', desc: '3 взаимные симпатии', test: s => (s.wins || 0) >= 3 },
     { id: 'love10', emoji: '👑', name: 'Легенда СУП', desc: '10 взаимных симпатий', test: s => (s.wins || 0) >= 10 },
-    { id: 'games10', emoji: '🎮', name: 'Игроман', desc: 'Сыграть 10 игр', test: s => (s.games_played || 0) >= 10 },
+    { id: 'games10', emoji: '🎮', name: 'Завсегдатай', desc: 'Сыграть 10 игр', test: s => (s.games_played || 0) >= 10 },
     { id: 'score100', emoji: '💎', name: 'Богач', desc: 'Набрать 100 очков', test: s => (s.score || 0) >= 100 },
     { id: 'ref3', emoji: '💌', name: 'Посол любви', desc: 'Пригласить 3 друзей', test: s => (s.invites || 0) >= 3 }
 ];
@@ -346,9 +351,7 @@ async function openAchievements() {
     }).join('');
 }
 
-function openShop() {
-    showScreen('shop-screen');
-}
+function openShop() { showScreen('shop-screen'); }
 
 function openBuy(param) {
     window.open('https://t.me/sup_love_game_bot?start=' + param, '_blank');
@@ -366,7 +369,7 @@ async function leaveRound() {
 }
 
 function burstHearts() {
-    const emojis = ['💖', '💘', '💕', '❤️', '💗'];
+    const emojis = ['💖', '', '💕', '❤️', '💗'];
     for (let i = 0; i < 18; i++) {
         const s = document.createElement('span');
         s.className = 'burst-heart';
