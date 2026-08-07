@@ -197,7 +197,6 @@ async function finishGameStats(data) {
         await applyRefBonus(pid);
     }
 }
-
 async function submitAnswer() {
     const text = document.getElementById('round-answer-input').value.trim();
     if (!text && !voiceData) { alert('Напиши ответ или запиши голос 🎤'); return; }
@@ -369,7 +368,7 @@ async function leaveRound() {
 }
 
 function burstHearts() {
-    const emojis = ['💖', '', '💕', '❤️', '💗'];
+    const emojis = ['💖', '💘', '💕', '❤️', '💗'];
     for (let i = 0; i < 18; i++) {
         const s = document.createElement('span');
         s.className = 'burst-heart';
