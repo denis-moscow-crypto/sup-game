@@ -18,7 +18,7 @@ const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp 
 try { tg.ready(); tg.expand(); } catch (e) {}
 
 let userData = {
-    name: '', age: '', city: '', gender: '', photo: '', username: '', question: '', blind: false, zodiac: '',
+    name: '', age: '', city: '', gender: '', photo: '', username: '', question: '', blind: false, zodiac: '', questionVoice: '',
     score: 0, wins: 0, games_played: 0, superlikes: 0, premium: false, invites: 0,
     telegramId: (tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.id : 'unknown'
 };
@@ -108,7 +108,7 @@ async function saveProfileToCloud(data) {
     const { error } = await sb.from('profiles').upsert({
         id: idNum, name: data.name, age: parseInt(data.age), city: data.city,
         gender: data.gender, photo: data.photo || null, username: data.username || null,
-        question: data.question || null, blind: !!data.blind, zodiac: data.zodiac || null
+        question: data.question || null, blind: !!data.blind, zodiac: data.zodiac || null, vq: data.questionVoice || null
     });
     if (error) console.log('Ошибка сохранения:', error.message);
 }
