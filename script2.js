@@ -1,13 +1,24 @@
 function openQuestion() {
-    document.getElementById('question-input').value = userData.question || '';
+    const savedQ = userData.question || '';
+    document.getElementById('question-input').value = savedQ.indexOf('🎤') === 0 ? '' : savedQ;
     document.getElementById('blind-checkbox').checked = !!userData.blind;
+    const prev = document.getElementById('qrec-preview');
+    if (userData.questionVoice) {
+        prev.src = userData.questionVoice; prev.style.display = 'block';
+        setRecStatusEl('qrec-status', '✅ Голосовой вопрос прикреплён');
+    } else {
+        prev.style.display = 'none'; setRecStatusEl('qrec-status', '');
+    }
+    document.getElementById('qrec-btn').textContent = '🎤 Записать голосом';
     showScreen('question-screen');
 }
 
 async function saveQuestionAndSearch() {
     const q = document.getElementById('question-input').value.trim();
-    if (!q) { alert('Придумай вопрос!'); return; }
-    userData.question = q;
+    if (!q && !voiceQuestionData) { alert('Напиши вопрос или запиши его голосом 🎤'); return; }
+    userData.question = q || '🎤 Голосовой вопрос';
+    if (voiceQuestionData) userData.questionVoice = voiceQuestionData;
+    voiceQuestionData = null;
     userData.blind = document.getElementById('blind-checkbox').checked;
     saveProfile(userData);
     await saveProfileToCloud(userData);
@@ -48,9 +59,11 @@ async function searchTick() {
         .eq('status', 'searching').neq('id', myId).neq('gender', userData.gender).limit(1);
     if (candidates && candidates.length) {
         const opp = candidates[0];
-        const { error } = await sb.from('games').insert({
+                const { error } = await sb.from('games').insert({
             player1: myId, player2: opp.id, q1: userData.question, q2: opp.question,
+            vq1: userData.questionVoice || null, vq2: opp.vq || null,
             blind: !!(userData.blind || opp.blind)
+        });
         });
         if (!error) {
             await sb.from('profiles').update({ status: 'in_game' }).in('id', [myId, opp.id]);
@@ -404,23 +417,30 @@ function openGift(type) {
 let mediaRecorder = null;
 let recChunks = [];
 let voiceData = null;
+let voiceQuestionData = null;
 let recTimer = null;
 let recSeconds = 0;
 
-function setRecStatus(t) {
-    const el = document.getElementById('rec-status');
+function setRecStatusEl(id, t) {
+    const el = document.getElementById(id);
     if (el) el.textContent = t;
 }
+function setRecStatus(t) { setRecStatusEl('rec-status', t); }
 
-async function toggleRecording() {
+async function toggleRecording(target) {
+    target = target || 'answer';
+    const btnId = target === 'question' ? 'qrec-btn' : 'rec-btn';
+    const stId = target === 'question' ? 'qrec-status' : 'rec-status';
+    const prevId = target === 'question' ? 'qrec-preview' : 'rec-preview';
+    const btn = document.getElementById(btnId);
     if (mediaRecorder && mediaRecorder.state === 'recording') {
         clearInterval(recTimer);
         mediaRecorder.stop();
-        document.getElementById('rec-btn').textContent = '🎤 Записать голос';
+        btn.textContent = target === 'question' ? '🎤 Записать голосом' : '🎤 Записать голос';
         return;
     }
-    voiceData = null;
-    document.getElementById('rec-preview').style.display = 'none';
+    if (target === 'question') voiceQuestionData = null; else voiceData = null;
+    document.getElementById(prevId).style.display = 'none';
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         mediaRecorder = new MediaRecorder(stream);
@@ -431,29 +451,30 @@ async function toggleRecording() {
             const blob = new Blob(recChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
             if (blob.size > 900 * 1024) {
                 alert('Слишком длинно 🙈 Запиши до 60 секунд.');
-                setRecStatus('');
+                setRecStatusEl(stId, '');
                 return;
             }
             const reader = new FileReader();
             reader.onload = () => {
-                voiceData = reader.result;
-                const prev = document.getElementById('rec-preview');
-                prev.src = voiceData;
+                if (target === 'question') voiceQuestionData = reader.result;
+                else voiceData = reader.result;
+                const prev = document.getElementById(prevId);
+                prev.src = reader.result;
                 prev.style.display = 'block';
-                setRecStatus('✅ Голос прикреплён к ответу!');
+                setRecStatusEl(stId, '✅ Голос прикреплён!');
             };
             reader.readAsDataURL(blob);
         };
         mediaRecorder.start();
         recSeconds = 0;
-        setRecStatus('🔴 Идёт запись... 0 сек');
-        document.getElementById('rec-btn').textContent = '⏹ Стоп';
+        setRecStatusEl(stId, '🔴 Идёт запись... 0 сек');
+        btn.textContent = '⏹ Стоп';
         recTimer = setInterval(() => {
             recSeconds++;
-            setRecStatus('🔴 Идёт запись... ' + recSeconds + ' сек');
-            if (recSeconds >= 60) toggleRecording();
+            setRecStatusEl(stId, '🔴 Идёт запись... ' + recSeconds + ' сек');
+            if (recSeconds >= 60) toggleRecording(target);
         }, 1000);
     } catch (e) {
-        alert('Микрофон недоступен 🙏 Ответь текстом.');
+        alert('Микрофон недоступен 🙏 Используй текст.');
     }
 }
